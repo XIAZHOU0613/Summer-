@@ -9,8 +9,8 @@
 *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);overscroll-behavior:none}
 [hidden]{display:none!important}
-.splash{position:fixed;inset:0;background:#111;display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .8s ease,visibility .8s}
-.splash.fade-out{opacity:0;visibility:hidden}
+.splash{position:fixed;top:0;left:0;right:0;bottom:0;background:#111;display:flex;align-items:center;justify-content:center;z-index:9999;transition:opacity .8s ease}
+.splash.fade-out{opacity:0;pointer-events:none}
 .splash-text{color:#eee;font-size:1.2rem;letter-spacing:.1em;opacity:0;animation:textFade 2s ease forwards}
 @keyframes textFade{0%{opacity:0;transform:translateY(12px)}40%{opacity:1;transform:translateY(0)}100%{opacity:1}}
 .screen,.home-screen{width:100%;height:100%;display:none;flex-direction:column;background:var(--bg);padding-bottom:80px;box-sizing:border-box;position:relative}
@@ -18,7 +18,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .screen.show,.home-screen.show{display:flex}
 /* 主页面内容舞台：功能面板内嵌显示 */
 .panel-stage{flex:1;min-height:0;position:relative;display:flex;flex-direction:column;overflow:hidden}
-.inline-panel{position:absolute;inset:0;width:100%;height:100%;padding-bottom:0;z-index:1}
+.inline-panel{position:absolute;top:0;left:0;right:0;bottom:0;width:100%;height:100%;padding-bottom:0;z-index:1}
 
 /* 主页 */
 .home-preview{margin-top:0;border-radius:var(--rc);padding:20px 18px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;cursor:pointer;overflow:hidden}
@@ -38,7 +38,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .home-default{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:14px;padding:calc(33vh - 146px) 20px 24px;animation:hdFade .8s ease both;overflow-y:auto}
 .home-default:not(.show){display:none}
 body.settings-open .home-default{display:none}
-body.settings-open .func-box{visibility:hidden;pointer-events:none}
+/* 设置页底部保留主页工具栏：不再隐藏 dock，把它提到设置页（z350）之上供随时切换 */
+body.settings-open .func-box{z-index:360}
 /* 设置页打开时把背后的聊天页整页收起：半透明设置背景只透出壁纸，不再透出聊天对话 */
 body.settings-open #chat{visibility:hidden}
 @keyframes hdFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -121,6 +122,8 @@ body.settings-open #chat{visibility:hidden}
 .nav-nickname{font-size:1rem;color:#111;line-height:1;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav-right{margin-left:auto;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#222;cursor:pointer}
 .nav-right svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+/* 信箱右上角的写信念笔图标：比其他页面图标小 1 号 */
+#mailWriteBtn svg{width:19px;height:19px}
 /* 右侧两个图标挨在一起时不留自动间距 */
 .chat-nav .nav-right+.nav-right{margin-left:0}
 
@@ -129,18 +132,20 @@ body.settings-open #chat{visibility:hidden}
 /* 高度/位移由 visualViewport 驱动：键盘弹出时贴合可视区，输入框自然贴键盘上移、顶栏不动 */
 /* 键盘升降不要加 height/transform 过渡：安卓 WebView 里过渡会和 visualViewport 的
    连续 resize/scroll 形成回弹，表现就是「发送后输入栏回位时弹跳」。直接跟随视口最稳。 */
-#chat{padding-bottom:0;height:var(--chat-h,100%);transform:translateY(var(--chat-y,0px));transition:none}
+/* 顶栏固定不动：键盘弹出时只用 --chat-h 贴合可视区高度，不再整体 translateY（offsetTop 抖动会带着顶栏一起跳） */
+#chat{padding-bottom:0;height:var(--chat-h,100%);transition:none}
 /* 长按气泡只走我们自己的引用/撤回菜单：禁掉系统自带的拷贝/查询/翻译/搜索网页等 */
 .chat-body{flex:1;overflow-y:auto;padding:16px 12px;display:flex;flex-direction:column;gap:16px;overscroll-behavior:contain;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 .chat-body .msg-bubble,.chat-body .msg-bubble *{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
-.msg-row{display:flex;gap:10px;align-items:flex-start;position:relative}
+/* 消息行之间用固定 gap；行本身不允许被压缩，多行文字撑高时只增高不挤压，间距保持固定、不重叠贴近 */
+.msg-row{display:flex;gap:10px;align-items:flex-start;position:relative;flex-shrink:0}
 .msg-row.me{flex-direction:row-reverse}
 .msg-avatar{width:40px;height:40px;border-radius:50%;background:#ddd;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#666;font-size:1rem;cursor:pointer}
 .msg-avatar img{width:100%;height:100%;object-fit:cover}
 /* 头像竖排容器：头像在上，时间在下 */
 .msg-side{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;min-width:40px}
 /* 头像下方只显示时刻（日期改到每天第一条消息上方） */
-.msg-time{font-size:.6rem;color:var(--msg-sub);line-height:1.25;text-align:center;max-width:56px;white-space:nowrap;letter-spacing:-.01em;user-select:none}
+.msg-time{font-size:.6rem;color:var(--msg-ink);line-height:1.25;text-align:center;max-width:56px;white-space:nowrap;letter-spacing:-.01em;user-select:none}
 /* 主动联系消息：气泡 + 下方「主动」标注（与正文同色，字号比正文小一号） */
 .msg-auto-wrap{display:flex;flex-direction:column;align-items:flex-start;gap:4px;max-width:58%;min-width:0}
 .msg-auto-wrap .msg-bubble{max-width:100%}
@@ -160,10 +165,14 @@ body.settings-open #chat{visibility:hidden}
 .typing-tip .typing-dots{position:absolute;left:calc(100% + 2px);top:50%;transform:translateY(-50%)}
 .typing-tip.show{display:flex}
 .typing-dots{display:inline-flex;align-items:center;gap:3px}
-.typing-dots i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:0;animation:dotIn 2.4s infinite}
-.typing-dots i:nth-child(2){animation-delay:.5s}
-.typing-dots i:nth-child(3){animation-delay:1s}
-@keyframes dotIn{0%{opacity:0;transform:scale(.4)}25%{opacity:1;transform:scale(1)}55%{opacity:0;transform:scale(.4)}100%{opacity:0;transform:scale(.4)}}
+/* 动态节奏：1 点 → 2 点 → 3 点 → 无 → 循环（周期 1.6s，每相 0.4s） */
+.typing-dots i{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:0;animation:dotWave 1.6s infinite}
+.typing-dots i:nth-child(1){animation-name:dotWave1}
+.typing-dots i:nth-child(2){animation-name:dotWave2}
+.typing-dots i:nth-child(3){animation-name:dotWave3}
+@keyframes dotWave1{0%,74%{opacity:1}76%,100%{opacity:0}}
+@keyframes dotWave2{0%,24%{opacity:0}26%,74%{opacity:1}76%,100%{opacity:0}}
+@keyframes dotWave3{0%,49%{opacity:0}51%,74%{opacity:1}76%,100%{opacity:0}}
 @keyframes typingBlink{0%,100%{opacity:.25}50%{opacity:1}}
 .chat-footer{position:relative;padding:6px 12px calc(14px + env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px}
 .emoji-btn{width:36px;height:36px;flex-shrink:0;border:none;border-radius:50%;background:transparent;color:#6b6f78;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:color .15s,transform .1s}
@@ -176,7 +185,7 @@ body.settings-open #chat{visibility:hidden}
 .send-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .chat-input{flex:1;height:36px;border:1px solid var(--line);border-radius:18px;background:var(--card);padding:0 16px;font-family:inherit;font-size:16px;outline:none;color:var(--ink)}
 .msg-row.pat{justify-content:center}
-.msg-row.pat .msg-bubble{background:transparent;border:none;box-shadow:none;border-radius:0;padding:2px 0;color:var(--msg-sub);font-size:.75rem;max-width:90%;text-align:center}
+.msg-row.pat .msg-bubble{background:transparent;border:none;box-shadow:none;border-radius:0;padding:2px 0;color:var(--msg-ink);font-size:.75rem;max-width:90%;text-align:center}
 /* 通话类系统消息：统一用同一枚线性电话图标，不再混用 emoji */
 .sys-phone{display:inline-block;width:13px;height:13px;vertical-align:-2px;margin-right:5px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 /* 日期分隔条：每天第一条消息上方，位置/字号与拍一拍一致，颜色用正文黑 */
@@ -234,6 +243,8 @@ body.settings-open #chat{visibility:hidden}
 /* 通用弹窗 */
 /* 通用弹窗：贴合可视视口，键盘弹出时自动缩到可见区域内，底部按钮不会被顶出屏幕 */
 .modal-mask{position:fixed;left:0;right:0;top:var(--mvh-y,0);height:var(--mvh,100%);background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center;padding:24px}
+/* 从设置页（overlay-page z-index:350）里打开的弹窗：层级必须高于设置页，否则会被盖住「点了没反应」 */
+#expSelModal{z-index:360}
 .modal-mask.show{display:flex}
 .modal-box{width:100%;max-width:360px;background:var(--card);border-radius:20px;padding:22px 20px;display:flex;flex-direction:column;gap:16px;box-shadow:0 16px 48px rgba(40,35,20,.18);max-height:calc(var(--mvh,100vh) - 48px);overflow-y:auto}
 .modal-title{font-size:1.05rem;font-weight:600;text-align:center;color:var(--ink)}
@@ -246,6 +257,10 @@ body.settings-open #chat{visibility:hidden}
 .export-cats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .export-cat{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:11px;padding:9px 11px;font-size:.84rem;color:var(--ink2);background:var(--surf);cursor:pointer;transition:border-color .15s,background .15s}
 .export-cat input{accent-color:var(--accent);width:15px;height:15px;flex-shrink:0}
+/* 数据整理的导出选择弹窗：黑字黑勾，不用主题蓝；勾选高亮也用中性色 */
+#expSelModal .export-cat{color:#111}
+#expSelModal .export-cat input{accent-color:#111}
+#expSelModal .export-cat:has(input:checked){border-color:#111;background:#f2f1ec}
 .export-cat:has(input:checked),.export-cat.picked{border-color:var(--accent);background:#f4f6ff}
 .modal-actions{display:flex;gap:12px}
 .modal-btn{flex:1;height:42px;border:none;border-radius:12px;font-family:inherit;font-size:.95rem;cursor:pointer}
@@ -253,7 +268,7 @@ body.settings-open #chat{visibility:hidden}
 .btn-save{background:var(--accent);color:#fff}
 
 /* 聊天内设置 - 底部面板 */
-.settings-sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:320;display:none;opacity:0;transition:opacity .22s}
+.settings-sheet-mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.4);z-index:320;display:none;opacity:0;transition:opacity .22s}
 .settings-sheet-mask.show{display:block;opacity:1}
 .settings-sheet{position:absolute;left:10px;right:10px;bottom:10px;background:var(--card);border-radius:22px;padding:10px 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px;max-height:78vh;overflow-y:auto;box-shadow:0 -12px 40px rgba(0,0,0,.18);transform:translateY(30px);opacity:0;transition:transform .26s cubic-bezier(.22,1,.36,1),opacity .26s}
 .settings-sheet-mask.show .settings-sheet{transform:translateY(0);opacity:1}
@@ -266,7 +281,7 @@ body.settings-open #chat{visibility:hidden}
 .sheet-cancel{margin-top:8px;border:none;background:#f0efe9;border-radius:14px;padding:13px;font-family:inherit;font-size:.98rem;color:#444;cursor:pointer}
 
 /* 设置子页面（在聊天页内以全屏 overlay 呈现） */
-.overlay-page{position:fixed;inset:0;background:var(--bg);z-index:350;display:none;flex-direction:column;padding-bottom:0}
+.overlay-page{position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:350;display:none;flex-direction:column;padding-bottom:0}
 .overlay-page.show{display:flex}
 .overlay-body{flex:1;overflow-y:auto;padding:12px 14px 24px;display:flex;flex-direction:column;gap:14px}
 
@@ -283,21 +298,31 @@ body.settings-open #chat{visibility:hidden}
 .set-tab.active{background:#efefef}
 .set-tab.active .set-tab-label{color:#111;font-weight:600}
 .set-stage{flex:1;min-height:0;position:relative}
-.set-panel{position:absolute;inset:0;display:none}
+.set-panel{position:absolute;top:0;left:0;right:0;bottom:0;display:none}
 .set-panel.show{display:flex;flex-direction:column}
 /* 使用大全：一个大标题气泡 + 一个正文气泡（不再拆成一堆小气泡） */
 /* 使用大全：所有说明都收在同一个气泡里，正文比标题小一号 */
-.usage-hero{background:var(--surf);border-radius:var(--rc);border:1px solid var(--line);box-shadow:var(--shadow);padding:18px}
+/* 使用大全：hero 直接作为折叠卡片的可点击头部，去掉自身独立边框 */
+.usage-hero{padding:16px 18px 12px;cursor:pointer;user-select:none}
+.usage-fold-card>.usage-hero{background:none;border:none;box-shadow:none;border-radius:0}
 .usage-hero-t{font-size:1.05rem;font-weight:600;color:var(--ink);letter-spacing:.01em}
-.usage-hero-s{font-size:.8rem;color:var(--muted);margin-top:5px;line-height:1.6;padding-bottom:13px;border-bottom:1px dashed var(--line)}
+/* 说明文字下方不再额外垫高：收起时卡片高度紧贴内容，不留白 */
+.usage-hero-s{font-size:.8rem;color:var(--muted);margin-top:5px;line-height:1.6;padding-bottom:0}
 .usage-sec{font-size:.9rem;font-weight:600;color:var(--ink);margin:16px 0 8px;padding-left:9px;border-left:3px solid #d9d4c9;line-height:1.3}
-.usage-hero-s + .usage-sec{margin-top:13px}
+/* 使用大全卡片内第一个章节「主页」往上挪一行：去掉顶部多余留白，其余章节间距不变 */
+.usage-fold-card .fold-inner > .usage-sec:first-child{margin-top:0}
+/* 收起卡顿优化：内容很长时逐帧重排会卡，收起方向先快速淡出内容再收高度（展开节奏与聊天设置一致） */
+.usage-fold-card:not(.open) .fold-inner{opacity:0;transition:opacity .18s ease}
+.usage-fold-card.open .fold-inner{opacity:1;transition:opacity .26s ease .1s}
 .usage-p{margin:0 0 8px;font-size:.9rem;color:#848a94;line-height:1.72}
 .usage-p:last-child{margin-bottom:0}
 .usage-n{color:var(--ink2);font-weight:600}
 .usage-n::after{content:'：'}
 /* 使用大全顶部搜索 */
-.usage-hero-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.usage-hero-top{display:flex;align-items:center;gap:12px}
+.usage-hero-top .fold-arrow{margin-left:auto}
+/* 搜索框在头部可点，点它不要触发折叠 */
+.usage-hero-top .usage-search{cursor:text}
 .usage-search{width:158px;flex-shrink:0;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:7px 10px;font-family:inherit;font-size:.78rem;color:var(--ink);outline:none}
 .usage-search::placeholder{color:#aab0b8}
 .usage-search:focus{border-color:#c9c2b4}
@@ -322,17 +347,21 @@ body.settings-open #chat{visibility:hidden}
 .dream-sub{font-size:.8rem;color:#888;margin-top:2px}
 .dream-section-title{font-size:.85rem;font-weight:600;color:#555;padding:6px 0 2px}
 /* 聊天设置：可折叠分组 */
-.fold-card{padding:0;overflow:hidden;background:var(--surf);border:1px solid var(--line);border-radius:14px}
+/* fold-card 去掉 dream-card 的 12px 间隙：收起时标题下方不留白，高度贴合内容 */
+.fold-card{padding:0;overflow:hidden;background:var(--surf);border:1px solid var(--line);border-radius:14px;gap:0}
 /* 聊天设置：每个小功能都是独立的圆角小气泡，直接排在页面上 */
 .fold-head{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;user-select:none}
 .fold-head .fold-title{font-size:.9rem;font-weight:600;color:#333;white-space:nowrap}
+/* 使用大全页里的折叠卡片标题（声音提醒 / 数据整理）：与「使用大全」主标题同字号 */
+.fold-title-lg{font-size:1.05rem;color:var(--ink)}
 .fold-summary{font-size:.75rem;color:#b5b5b5;font-weight:400;white-space:nowrap}
 .fold-arrow{width:9px;height:9px;border-right:1.8px solid #aaa;border-bottom:1.8px solid #aaa;transform:rotate(45deg);transition:transform .25s;margin-top:-3px;margin-left:auto}
 .fold-card.open .fold-arrow{transform:rotate(-135deg);margin-top:3px}
-.fold-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .22s cubic-bezier(.4,0,.2,1);padding:0 16px}
-.fold-inner{min-height:0;overflow:hidden;opacity:0;transition:opacity .17s ease}
+.fold-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .34s cubic-bezier(.32,0,.18,1);padding:0 16px}
+.fold-inner{min-height:0;overflow:hidden;opacity:0;transition:opacity .18s ease}
 .fold-card.open .fold-body{grid-template-rows:1fr;padding:0 16px 16px}
-.fold-card.open .fold-inner{opacity:1}
+/* 展开：高度先撑开一点，内容再淡入（带一点延迟），既顺滑又不闪 */
+.fold-card.open .fold-inner{opacity:1;transition:opacity .26s ease .1s}
 .fold-body .dream-row{padding:5px 0}
 /* 当前资料编辑行：两个头像如情侣头像般靠在一起（可分别点击更换），右侧昵称输入 */
 .profile-edit-row{display:flex;align-items:center;gap:0}
@@ -340,6 +369,10 @@ body.settings-open #chat{visibility:hidden}
 /* 两个头像像情侣头像那样叠靠在一起，昵称框另留间距 */
 .profile-edit-row .per-avatar + .per-avatar{margin-left:-14px}
 .profile-edit-row .per-nick-input{margin-left:12px}
+/* 两个昵称框并排：左边联系人、右边我，各占一半 */
+.profile-nick-fields{display:flex;gap:8px;flex:1;min-width:0;margin-left:12px}
+.profile-nick-fields .per-nick-input{margin-left:0;flex:1;min-width:0;width:0}
+.profile-nick-fields .per-nick-input + .per-nick-input{margin-left:0}
 .per-avatar{width:52px;height:52px;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;color:#666;font-size:1.1rem;flex-shrink:0;cursor:pointer;position:relative;transition:transform .15s,box-shadow .15s}
 .per-avatar:active{transform:scale(.93)}
 .per-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
@@ -362,7 +395,7 @@ body.settings-open #chat{visibility:hidden}
 .couple-bubble.show-del .as-del{display:flex}
 .dream-row{display:flex;align-items:center;justify-content:flex-start;gap:12px}
 /* 形象 / 聊天 / 通话设置：编辑框和开关统一靠右对齐 */
-#setPanelFigure .dream-row,#setPanelChat .dream-row,#setPanelCall .dream-row{justify-content:space-between}
+#setPanelFigure .dream-row,#setPanelChat .dream-row,#setPanelCall .dream-row,#setPanelUsage .dream-row{justify-content:space-between}
 #setPanelFigure .dream-row>label:first-child,#setPanelChat .dream-row>label:first-child,#setPanelCall .dream-row>label:first-child{flex:1;min-width:0}
 #setPanelFigure .dream-row>label.switch,#setPanelChat .dream-row>.dream-input,#setPanelCall .dream-row>.dream-input,#setPanelChat .dream-row>label.switch,#setPanelCall .dream-row>label.switch{flex:0 0 auto;margin-left:auto}
 .dream-row label{font-size:.88rem;color:#333}
@@ -388,12 +421,18 @@ body.settings-open #chat{visibility:hidden}
 
 /* 朋友圈/邮箱 */
 .moments-scroll{flex:1;overflow-y:auto}
-.moments-cover{position:relative;height:210px;background:linear-gradient(160deg,#c9d6e8,#e8d9e2);overflow:hidden;cursor:pointer}
-.mc-inner{position:absolute;inset:0;background-size:cover;background-position:center}
-.mc-me{position:absolute;right:16px;bottom:14px;display:flex;align-items:center;gap:10px}
-.mc-avatar{width:46px;height:46px;border-radius:12px;overflow:hidden;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;color:#555;font-weight:600}
+/* 封面高度调小；头像放在外层 wrap 里，才能跨出封面底边（分界线），位置仍在右侧 */
+.moments-cover-wrap{position:relative}
+.moments-cover{position:relative;height:170px;background:linear-gradient(160deg,#c9d6e8,#e8d9e2);overflow:hidden;cursor:pointer}
+.mc-inner{position:absolute;top:0;left:0;right:0;bottom:0;background-size:cover;background-position:center}
+/* 头像中心正好卡在封面与动态列表的分界线上：46px 头像下移 23px，骑线显示 */
+.mc-me{position:absolute;right:16px;bottom:-26px;z-index:3;display:flex;align-items:center;gap:10px}
+.mc-avatar{width:52px;height:52px;border-radius:14px;overflow:hidden;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;color:#555;font-weight:600;box-shadow:0 1px 5px rgba(0,0,0,.18)}
 .mc-avatar img{width:100%;height:100%;object-fit:cover}
-.mc-name{color:#fff;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+/* 昵称固定黑色字体（不再跟随壁纸反色），淡白描边保证深色封面上也看得清 */
+.mc-name{color:#111;font-weight:600;text-shadow:0 1px 3px rgba(255,255,255,.75),0 0 2px rgba(255,255,255,.6)}
+/* 头像骑线后给第一条动态留出空间，避免被头像压住 */
+.moments-feed{padding-top:30px}
 .moment-item{background:var(--surf);margin:14px 16px;border-radius:var(--rc);border:1px solid var(--line);box-shadow:var(--shadow);padding:16px;cursor:pointer}
 /* 刚收到回复的那条动态：边框闪一下，明确回复落在这里 */
 .moment-item.just-replied{animation:momentFlash 1.1s ease}
@@ -407,40 +446,108 @@ body.settings-open #chat{visibility:hidden}
 .mi-text{margin:10px 0;line-height:1.55;color:#222;white-space:pre-wrap;word-break:break-word;cursor:pointer;border-radius:8px;transition:opacity .15s}
 .mi-text:active{opacity:.6}
 .mail-list{flex:1;overflow-y:auto;padding:10px 14px}
-.mail-item{display:flex;gap:12px;background:var(--surf);border-radius:var(--rc);border:1px solid var(--line);box-shadow:var(--shadow);padding:16px;margin-bottom:12px;cursor:pointer}
-.mail-avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;background:#ddd;display:flex;align-items:center;justify-content:center;color:#666;flex-shrink:0}
-.mail-avatar img{width:100%;height:100%;object-fit:cover}
+/* 信件按月份分组：月份标注在气泡上方的分界横线左侧（横线右侧当月封数），每个月一张气泡卡，
+   卡内每封信之间用横线分隔 */
+.mail-month-line{display:flex;align-items:center;gap:10px;margin:14px 2px 8px}
+.mm-label{font-size:.76rem;font-weight:400;color:#111;white-space:nowrap}
+.mm-rule{flex:1;height:1px;background:#dedbd2}
+.mm-count{font-size:.7rem;color:#777;white-space:nowrap}
+.mail-month{background:var(--surf);border-radius:var(--rc);border:1px solid var(--line);box-shadow:var(--shadow);margin:0 2px 6px;overflow:hidden}
+.mail-month-body .mail-item{display:flex;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:opacity .15s}
+.mail-month-body .mail-item:last-child{border-bottom:none}
+.mail-month-body .mail-item:active{opacity:.6}
+/* 左侧写信时间：月/日在上、周几在下；与右侧内容之间用竖虚线隔开 */
+.mail-date{width:46px;flex-shrink:0;text-align:center;padding-top:2px;border-right:1px dashed #d8d5cc;margin-right:12px;padding-right:10px}
+.md-day{font-size:.88rem;font-weight:600;color:#111;line-height:1.2}
+.md-week{font-size:.68rem;color:#999;margin-top:3px;line-height:1.2}
 .mail-main{flex:1;min-width:0}
-.mail-top{display:flex;align-items:center;gap:8px}
-.mail-from{font-size:.95rem;font-weight:600;color:#111;flex:1}
-.mail-time{font-size:.74rem;color:#aaa}
-.mail-title{font-size:.9rem;color:#333;margin-top:3px}
-.mail-preview{font-size:.82rem;color:#999;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mail-unread{width:8px;height:8px;border-radius:50%;background:#e5484d;flex-shrink:0;align-self:center}
-.env-mask{position:fixed;inset:0;background:rgba(58,50,40,.55);z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;gap:26px}
+/* 右侧信件内容前 2 行 */
+.mail-snippet{font-size:.9rem;color:#333;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;white-space:pre-line}
+/* 底部小一号：字数 • 已读/未读 */
+.mail-meta{font-size:.72rem;color:#999;margin-top:5px;line-height:1.3}
+.mail-meta .st-unread{color:#e5484d}
+/* ===== 写信新页面：整体浅灰色调（不发黄），顶部栏与底部比白纸暗一点点，形成色差层次 ===== */
+.write-page{background:#ececec;z-index:355}
+.wp-top{position:relative;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#e4e4e2;border-bottom:1px solid #d7d7d5}
+.wp-top-center{position:absolute;left:50%;transform:translateX(-50%);text-align:center}
+.wp-title{font-size:1rem;font-weight:600;color:#111;line-height:1.3}
+.wp-date{font-size:.72rem;color:#8b8b88;margin-top:2px}
+.wp-count{font-size:.76rem;color:#6e6e6b;white-space:nowrap;margin-left:auto}
+/* 附件预览条：夹图/夹表情包的结果显示在信纸上方（不属于信纸本身） */
+.wp-attach-strip{flex-shrink:0;display:flex;gap:12px;flex-wrap:wrap;padding:12px 18px 0}
+.wp-att{position:relative;display:flex;align-items:center}
+.wp-att img{width:58px;height:58px;object-fit:cover;border-radius:10px;border:1px solid #d5d5d3;background:#fff;display:block}
+.wp-att-txt{max-width:170px;background:#fff;border:1px solid #d5d5d3;border-radius:12px;padding:8px 12px;font-size:.84rem;color:#222;word-break:break-word}
+.wp-att-x{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#e5484d;color:#fff;border:none;font-size:13px;line-height:1;cursor:pointer;padding:0}
+/* 白纸：比页面亮，微微投影浮起 */
+.wp-paper{flex:1;min-height:0;margin:14px;background:#fdfdfc;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.07);display:flex;overflow:hidden}
+.wp-side{width:56px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 0;gap:6px}
+.wp-day{font-size:1.5rem;font-weight:600;color:#111;line-height:1}
+.wp-week{font-size:.72rem;color:#777}
+.wp-month{font-size:.72rem;color:#aaa}
+.wp-divider{width:1px;flex-shrink:0;background:#e0ddd4;margin:14px 0}
+.wp-input{flex:1;min-width:0;border:none;background:transparent;outline:none;resize:none;font-family:inherit;font-size:.96rem;line-height:2;color:#222;padding:14px 16px 18px}
+.wp-input::placeholder{color:#c2beb3}
+/* 纸张最下方的新底部栏（无气泡，与顶部栏同色）：夹图/夹表情包气泡按钮 + 寄出 */
+.wp-bottom{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;background:#e4e4e2;border-top:1px solid #d7d7d5;padding:10px 16px calc(12px + env(safe-area-inset-bottom))}
+.wp-attach{display:flex;gap:10px}
+.wp-chip{border:1px solid #cbcbc9;background:#f6f6f4;border-radius:999px;padding:9px 18px;font-family:inherit;font-size:.86rem;color:#333;cursor:pointer}
+.wp-chip:active{background:#e7e7e5}
+.wp-send{border:none;background:#111;color:#fff;font-family:inherit;font-size:.95rem;letter-spacing:.1em;padding:11px 34px;border-radius:16px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.wp-send:active{opacity:.85}
+/* 未读信件跳转高亮：到达时闪一下，明确信件落在这里 */
+.mail-month-body .mail-item.just-flash{animation:mailFlash 1.1s ease}
+@keyframes mailFlash{0%{box-shadow:inset 0 0 0 0 rgba(229,72,77,.4)}55%{box-shadow:inset 0 0 0 2px rgba(229,72,77,.35)}100%{box-shadow:inset 0 0 0 0 rgba(229,72,77,0)}}
+/* 信箱顶部（信箱栏正下方）：三个分类入口（一行三栏，右侧纯数字，点中下方出现横线）；
+   统计行「共 N 封信件」放在顶部导航「信箱」标题正下方（小一号字）；
+   「X 封未看」常驻显示：有未读时红色可点，直达最早的未读信件（参考朋友圈新消息胶囊的跳转），没有时灰色 */
+.mail-nav-center{flex-direction:column;gap:1px}
+.mail-nav-stats{font-size:.66rem;color:#555;line-height:1.2;white-space:nowrap;letter-spacing:.02em}
+.mail-unseen{color:#e5484d;cursor:pointer;font-weight:600}
+/* 没有未读时「0 封未看」默认黑色常显，有未读才变红提醒 */
+.mail-unseen.zero{color:#111;font-weight:400;cursor:default}
+.mail-unseen:not(.zero):active{opacity:.65}
+.mail-head{flex-shrink:0;padding:4px 16px 2px;border-bottom:1px solid var(--line);background:var(--surf)}
+.mail-cats{display:flex}
+.mail-cat{flex:1;background:none;border:none;border-bottom:2px solid transparent;padding:5px 2px 6px;display:flex;align-items:baseline;justify-content:center;gap:6px;cursor:pointer;font-family:inherit;color:#111;transition:border-color .15s}
+.mail-cat:active{opacity:.6}
+.mail-cat.active{border-bottom-color:#111}
+.mail-cat.active .mail-cat-label{font-weight:600}
+.mail-cat-label{font-size:.85rem;line-height:1.2;white-space:nowrap}
+.mail-cat-count{font-size:.78rem;color:#555;line-height:1.2}
+.mail-cat.active .mail-cat-count{color:#111}
+/* 未读信件跳转高亮：到达时边框闪一下，明确信件落在这里 */
+.mail-item.just-flash{animation:mailFlash 1.1s ease}
+@keyframes mailFlash{0%{box-shadow:0 0 0 0 rgba(229,72,77,.45)}55%{box-shadow:0 0 0 3px rgba(229,72,77,.26)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+/* 数据整理：导出按钮行（类别选择改为点导出按钮后弹窗选择） */
+.exp-btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.exp-btn{flex:1;min-width:96px;border:1px solid var(--line);background:#f2f1ec;border-radius:10px;padding:9px 6px;font-family:inherit;font-size:.82rem;color:#333;cursor:pointer}
+.exp-btn:active{background:#e8e6df}
+.env-mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(58,50,40,.55);z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;gap:26px}
 .env-mask.show{display:flex}
 .envelope{position:relative;width:280px;height:180px;perspective:800px;animation:envFade 1.3s ease forwards}
-.env-body{position:absolute;inset:0;background:#e6d6bc;border-radius:10px;box-shadow:0 18px 40px rgba(0,0,0,.28);z-index:1}
+.env-body{position:absolute;top:0;left:0;right:0;bottom:0;background:#e6d6bc;border-radius:10px;box-shadow:0 18px 40px rgba(0,0,0,.28);z-index:1}
 .env-letter{position:absolute;left:14px;right:14px;top:14px;bottom:12px;background:#fdfbf4;border-radius:6px;z-index:2;animation:letterOut .8s ease forwards;animation-delay:.45s}
 .env-flap{position:absolute;top:0;left:0;width:0;height:0;border-left:140px solid transparent;border-right:140px solid transparent;border-top:92px solid #d9c39a;transform-origin:top center;z-index:3;animation:flapOpen .38s ease forwards;animation-delay:.1s;backface-visibility:hidden}
 .env-hint{color:rgba(255,255,255,.9);font-size:.9rem;letter-spacing:2px}
 @keyframes flapOpen{0%{transform:rotateX(0)}100%{transform:rotateX(-170deg)}}
 @keyframes letterOut{0%{transform:translateY(0)}100%{transform:translateY(-64%)}}
 @keyframes envFade{0%,72%{opacity:1}100%{opacity:0}}
-.paper-mask{position:fixed;inset:0;background:#e9e1d0;z-index:390;display:none;overflow-y:auto;padding:30px 18px 120px}
+.paper-mask{position:fixed;top:0;left:0;right:0;bottom:0;background:#e9e1d0;z-index:390;display:none;overflow-y:auto;padding:30px 18px 120px}
 .paper-mask.show{display:block}
 .paper-page{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
 .paper-paper{position:relative;background:#fdfaf2;background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 35px,rgba(150,130,95,.08) 35px,rgba(150,130,95,.08) 36px);border-radius:6px;padding:36px 30px;min-height:360px;box-shadow:0 12px 34px rgba(90,75,50,.22)}
 .paper-title{font-size:1.3rem;font-weight:600;text-align:center;color:#3a3226;margin-bottom:20px;letter-spacing:1px}
 .paper-from{font-size:.9rem;color:#8a7d63;margin-bottom:16px}
+/* 信纸里的表情包：单独一行居中显示（图片型按图片、文字型按大字），下方才是信的正文 */
+.paper-sticker{font-size:2.3rem;line-height:1.5;text-align:center;margin:0 0 16px;word-break:break-word}
+.paper-sticker img{max-width:72%;max-height:140px;border-radius:10px;display:block;margin:0 auto;box-shadow:0 3px 12px rgba(90,75,50,.18)}
+.paper-sticker[hidden]{display:none}
 .paper-text{font-size:1.02rem;line-height:2;color:#333;white-space:pre-wrap;min-height:140px}
 .paper-sign{text-align:right;color:#8a7d63;margin-top:28px;font-size:.86rem}
 .paper-actions{display:flex;gap:14px;justify-content:center}
-.pick-bar{display:flex;flex-wrap:wrap;gap:8px;max-height:96px;overflow-y:auto}
-.pick-chip{border:1px solid #e3e3e3;background:var(--bg);border-radius:999px;padding:6px 12px;font-size:.82rem;color:#333;cursor:pointer}
-.pick-empty{font-size:.8rem;color:#aaa}
 .mail-textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:inherit;font-size:.95rem;outline:none;resize:vertical;line-height:1.5;color:var(--ink)}
-.pat-mask{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:310;display:none;opacity:0;transition:opacity .25s}
+.pat-mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.42);z-index:310;display:none;opacity:0;transition:opacity .25s}
 .pat-mask.show{display:block;opacity:1}
 .pat-sheet{position:absolute;left:12px;right:12px;bottom:12px;background:var(--card);border-radius:22px;padding:10px 14px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;box-shadow:0 -12px 40px rgba(0,0,0,.18);transform:translateY(30px);opacity:0;transition:transform .28s cubic-bezier(.22,1,.36,1),opacity .28s}
 .pat-mask.show .pat-sheet{transform:translateY(0);opacity:1}
@@ -469,6 +576,10 @@ body.settings-open #chat{visibility:hidden}
 .sticker-empty{grid-column:1/-1;font-size:.8rem;color:#aaa;text-align:center;padding:24px 8px;line-height:1.6}
 
 /* 朋友圈评论 */
+/* 朋友圈页内新消息通知胶囊：悬浮在页顶居中，点击逐条查看（从远到近），看完才消失 */
+.moments-notify{position:absolute;top:62px;left:50%;transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.14);padding:6px 14px;font-size:.78rem;color:#333;cursor:pointer;user-select:none;-webkit-user-select:none}
+.moments-notify[hidden]{display:none}
+.mn-dot{width:8px;height:8px;border-radius:50%;background:#ff3b30;flex-shrink:0}
 .mi-replies{margin-top:10px;background:#f7f6f2;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
 .mi-reply-item{font-size:.82rem;color:#333;line-height:1.45;cursor:pointer;border-radius:8px;padding:3px 6px;margin:0 -6px;transition:background .15s}
 .mi-reply-item:active{background:#eeede7}
@@ -478,6 +589,8 @@ body.settings-open #chat{visibility:hidden}
    位置只由 bottom 跟随键盘，过渡一起做：键盘升降时整条平滑上移，不会一格一格地跳 */
 .reply-composer{position:fixed;left:0;right:0;bottom:var(--kbd,0);z-index:120;display:flex;align-items:center;gap:10px;padding:8px 14px calc(8px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid rgba(0,0,0,.06);transform:translateY(140%);opacity:0;pointer-events:none;will-change:transform;transition:transform .2s cubic-bezier(.32,.72,0,1),opacity .16s ease,bottom .22s cubic-bezier(.32,.72,0,1)}
 .reply-composer.show{transform:translateY(0);opacity:1;pointer-events:auto}
+/* 弹键盘前的等待态：先藏住，等键盘高度到位再一次性滑入到位，避免「先贴底、再上跳」的弹动感 */
+.reply-composer.wait-kbd{transform:translateY(140%);opacity:0;pointer-events:none}
 /* 收起状态去掉底色与上边线，完全让开页面 */
 .reply-composer:not(.show){background:transparent;border-top-color:transparent}
 /* 字号必须是 16px：iOS Safari 对小于 16px 的输入框会强制放大页面，聚焦瞬间整页「抖一下」就是这个 */
@@ -491,10 +604,10 @@ body.kbd-open .func-box{visibility:hidden;pointer-events:none}
 
 /* 朋友圈封面：自己拖位置 + 缩放裁剪 */
 .cover-crop-box{max-width:430px}
-.cover-crop-frame{position:relative;width:100%;height:210px;border-radius:14px;overflow:hidden;background:#eceae4;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.cover-crop-frame{position:relative;width:100%;height:170px;border-radius:14px;overflow:hidden;background:#eceae4;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .cover-crop-frame.dragging{cursor:grabbing}
-.cover-crop-img{position:absolute;inset:0;background-size:cover;background-position:center;will-change:transform}
-.cover-crop-frame::after{content:'';position:absolute;inset:0;border-radius:14px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.5);pointer-events:none}
+.cover-crop-img{position:absolute;top:0;left:0;right:0;bottom:0;background-size:cover;background-position:center;will-change:transform}
+.cover-crop-frame::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;border-radius:14px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.5);pointer-events:none}
 .cover-crop-hint{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:.72rem;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.65);pointer-events:none;transition:opacity .3s}
 .cover-crop-full{display:flex;align-items:center;gap:10px;font-size:.72rem;color:#a9a49a}
 .ccf-thumb{width:64px;height:40px;border-radius:8px;background:#eceae4 center/contain no-repeat;flex-shrink:0;border:1px solid var(--line)}
@@ -526,7 +639,7 @@ body.kbd-open .func-box{visibility:hidden;pointer-events:none}
 .callbg-btn:active{opacity:.75}
 /* 选区弹窗：视窗按来电浮窗比例(3:2)，按住图片自由滑动挑想显示的部分 */
 .callbg-crop{position:relative;width:100%;padding-top:66.67%;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#111;touch-action:none;user-select:none;-webkit-user-select:none}
-.callbg-crop-inner{position:absolute;inset:0;background-size:cover;background-repeat:no-repeat;background-position:50% 50%}
+.callbg-crop-inner{position:absolute;top:0;left:0;right:0;bottom:0;background-size:cover;background-repeat:no-repeat;background-position:50% 50%}
 .callbg-confirm{background:var(--accent);color:#fff}
 #callBgModal{z-index:400}
 /* 最小化后的悬浮小泡：可自由拖动，切页也保留，点一下还原 */
@@ -539,12 +652,13 @@ body.kbd-open .func-box{visibility:hidden;pointer-events:none}
 .call-mini-hangup:active{transform:scale(.92)}
 .call-mini-hangup svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-.switch{position:relative;width:46px;height:26px;flex-shrink:0}
-.switch input{opacity:0;width:0;height:0}
-.switch .slider{position:absolute;inset:0;background:#ddd;border-radius:13px;transition:background .2s;cursor:pointer}
-.switch .slider::before{content:"";position:absolute;width:22px;height:22px;left:2px;top:2px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.switch input:checked+.slider{background:var(--accent)}
-.switch input:checked+.slider::before{transform:translateX(20px)}
+/* 全局开关样式：改为方框打勾（勾选后黑底白勾），替换原滑动开关 */
+.switch{position:relative;width:22px;height:22px;flex-shrink:0}
+.switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.switch .slider{position:absolute;inset:0;background:#fff;border:1.6px solid #b9b9b9;border-radius:5px;transition:background .15s,border-color .15s;cursor:pointer}
+.switch .slider::before{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid #fff;border-width:0 2.2px 2.2px 0;transform:rotate(45deg) scale(0);transition:transform .15s}
+.switch input:checked+.slider{background:#111;border-color:#111}
+.switch input:checked+.slider::before{transform:rotate(45deg) scale(1)}
 /* 保存提示：页面中部浮现，自动消失，无需点击确认 */
 /* 提示条：固定在「窗口」正中间（不跟可视视口走），弹出来就停在中间，不会有从上方滑下来的位移 */
 /* 引用条：挂在输入框上方 */
@@ -552,7 +666,7 @@ body.kbd-open .func-box{visibility:hidden;pointer-events:none}
 .quote-bar .q-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .quote-bar .q-cancel{border:none;background:none;color:#999;font-size:1.05rem;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0}
 /* 气泡内的引用块 */
-.msg-quote{font-size:.72rem;color:#98a0ab;line-height:1.35;border-left:2px solid rgba(130,140,155,.35);padding:1px 0 1px 7px;margin:0 0 5px;word-break:break-word;max-height:3.4em;overflow:hidden;user-select:none}
+.msg-quote{font-size:.72rem;color:var(--msg-sub);line-height:1.35;border-left:2px solid rgba(130,140,155,.35);padding:1px 0 1px 7px;margin:0 0 5px;word-break:break-word;max-height:3.4em;overflow:hidden;user-select:none}
 /* 长按气泡：上方浮出的复制/引用/撤回图标条（纯白不透、高度约原来一半） */
 .msg-act-bar{position:absolute;bottom:calc(100% + 5px);left:50px;display:flex;gap:1px;background:#fff;border:1px solid #e6e3dc;border-radius:9px;padding:2px 3px;box-shadow:0 4px 16px rgba(40,35,25,.18);z-index:6;transform:translateY(4px);opacity:0;pointer-events:none;transition:transform .16s,opacity .16s}
 .msg-act-bar.show{transform:translateY(0);opacity:1;pointer-events:auto}
@@ -599,10 +713,10 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
   </div>
   <div class="func-box">
     <div class="func-grid">
-      <div class="func-item app-item" data-app="chat"><div class="app-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle class="dot d1" cx="7.8" cy="12" r="1.05" fill="currentColor" stroke="none"/><circle class="dot d2" cx="12" cy="12" r="1.05" fill="currentColor" stroke="none"/><circle class="dot d3" cx="16.2" cy="12" r="1.05" fill="currentColor" stroke="none"/></svg></div></div>
+      <div class="func-item app-item" data-app="chat"><div class="app-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle class="dot d1" cx="7.8" cy="12" r="1.05" fill="currentColor" stroke="none"/><circle class="dot d2" cx="12" cy="12" r="1.05" fill="currentColor" stroke="none"/><circle class="dot d3" cx="16.2" cy="12" r="1.05" fill="currentColor" stroke="none"/></svg><span class="app-dot" id="chatDot" hidden></span></div></div>
       <div class="func-item app-item" data-app="cardLib"><div class="app-icon"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2.5"/><path class="card-back" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></div></div>
       <div class="func-item app-item" data-app="moments"><div class="app-icon"><svg viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3Z"/><circle class="cam-lens" cx="12" cy="13" r="3.5"/></svg><span class="app-dot" id="momentsDot" hidden></span></div></div>
-      <div class="func-item app-item" data-app="mail"><div class="app-icon"><svg viewBox="0 0 24 24"><path d="M3 7.5a2.5 2.5 0 0 1 2.5-2.5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5Z"/><path d="m3.5 7 8.5 6 8.5-6"/><path class="letter" d="M8 3.5 12 7l4-3.5"/></svg></div></div>
+      <div class="func-item app-item" data-app="mail"><div class="app-icon"><svg viewBox="0 0 24 24"><path d="M3 7.5a2.5 2.5 0 0 1 2.5-2.5h13A2.5 2.5 0 0 1 21 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 16.5Z"/><path d="m3.5 7 8.5 6 8.5-6"/><path class="letter" d="M8 3.5 12 7l4-3.5"/></svg><span class="app-dot" id="mailDot" hidden></span></div></div>
       <div class="func-item app-item" data-app="settings"><div class="app-icon"><svg viewBox="0 0 24 24"><path class="gear" d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"/><circle cx="12" cy="12" r="3"/></svg></div></div>
     </div>
   </div>
@@ -633,7 +747,6 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
 <!-- 字卡库 -->
 <div class="screen" id="cardLib">
   <div class="chat-nav">
-    <div class="nav-back" id="libBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
     <div class="nav-center"><div class="nav-nickname">字卡库</div></div>
     <div class="nav-right" id="libExportBtn"><svg viewBox="0 0 24 24"><path d="M12 3v11"/><polyline points="8 10 12 14 16 10"/><path d="M4.5 16.5v2.5a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-2.5"/></svg></div>
     <div class="nav-right" id="libSearchBtn"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
@@ -654,15 +767,18 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
 <!-- 朋友圈 -->
 <div class="screen" id="moments">
   <div class="chat-nav">
-    <div class="nav-back" id="momentsBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
     <div class="nav-center"><div class="nav-nickname">朋友圈</div></div>
-    <div class="nav-right" id="momentSettingBtn" title="朋友圈设置"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z"/><circle cx="12" cy="12" r="3"/></svg></div>
     <div class="nav-right" id="momentPublishBtn"><svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
   </div>
   <div class="moments-scroll">
-    <div class="moments-cover" id="momentCover"><div class="mc-inner" id="mcInner"></div><div class="mc-me"><div class="mc-avatar" id="mcAvatar">我</div><div class="mc-name" id="mcName">我</div></div></div>
+    <div class="moments-cover-wrap">
+      <div class="moments-cover" id="momentCover"><div class="mc-inner" id="mcInner"></div></div>
+      <div class="mc-me"><div class="mc-avatar" id="mcAvatar">我</div><div class="mc-name" id="mcName">我</div></div>
+    </div>
     <div class="moments-feed" id="momentFeed"></div>
   </div>
+  <!-- 新消息通知（参考微信）：有未读回复/动态时出现，点击直达最新消息，看完红点才消失 -->
+  <div class="moments-notify" id="momentsNotify" hidden><span class="mn-dot"></span><span id="momentsNotifyText">有新消息</span></div>
   <input type="file" id="coverFile" accept="image/*" hidden>
 </div>
 
@@ -675,9 +791,15 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
 <!-- 邮箱 -->
 <div class="screen" id="mail">
   <div class="chat-nav">
-    <div class="nav-back" id="mailBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
-    <div class="nav-center"><div class="nav-nickname">信箱</div></div>
+    <div class="nav-center mail-nav-center"><div class="nav-nickname">信箱</div><div class="mail-nav-stats" id="mailStatsLine">共 0 封，<span class="mail-unseen zero" id="mailUnseenLink">0 封未看</span></div></div>
     <div class="nav-right" id="mailWriteBtn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+  </div>
+  <div class="mail-head">
+    <div class="mail-cats">
+      <button class="mail-cat" id="mailCatLetter" type="button"><span class="mail-cat-label">TA的来信</span><span class="mail-cat-count" id="mailCountLetter">0</span></button>
+      <button class="mail-cat" id="mailCatMine" type="button"><span class="mail-cat-label">我的写信</span><span class="mail-cat-count" id="mailCountMine">0</span></button>
+      <button class="mail-cat" id="mailCatReply" type="button"><span class="mail-cat-label">TA的回信</span><span class="mail-cat-count" id="mailCountReply">0</span></button>
+    </div>
   </div>
   <div class="mail-list" id="mailList"></div>
 </div>
@@ -685,7 +807,6 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
 <!-- ===== 设置中心（新页面，顶部工具栏切换） ===== -->
 <div class="overlay-page settings-hub" id="settingsHub">
   <div class="chat-nav">
-    <div class="nav-back" id="settingsHubBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
     <div class="nav-center"><div class="nav-nickname">设置</div></div>
     <div class="nav-right"></div>
   </div>
@@ -707,11 +828,14 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
           <div class="profile-edit-row">
             <div class="per-avatar" id="dreamAvatar" title="点击更换联系人头像">梦</div>
             <div class="per-avatar" id="myAvatar" title="点击更换我的头像">我</div>
-            <input type="text" class="per-nick-input" id="dreamNickInput" maxlength="12" placeholder="输入联系人昵称">
+            <div class="profile-nick-fields">
+              <input type="text" class="per-nick-input" id="dreamNickInput" maxlength="12" placeholder="联系人昵称">
+              <input type="text" class="per-nick-input" id="myNickInput2" maxlength="12" placeholder="我的昵称">
+            </div>
             <input type="file" id="dreamAvatarFile" accept="image/*" hidden>
             <input type="file" id="myAvatarFile2" accept="image/*" hidden>
           </div>
-          <div class="dream-note">点头像换图，右侧改昵称，改完自动保存。</div>
+          <div class="dream-note">左边头像是联系人、右边是我；点头像换图，右侧两个输入框分别改昵称，改完自动保存。</div>
         </div>
         <div class="dream-card">
           <div class="dream-section-title">情侣头像</div>
@@ -854,19 +978,6 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
           <div class="record-search-result" id="recordSearchResult"></div>
         </div>
         <div class="record-card io-card">
-          <div class="dream-section-title">导入 / 导出</div>
-          <div class="record-actions">
-            <button class="record-btn primary" id="recordExportJson">导出 JSON</button>
-            <button class="record-btn" id="recordExportTxt">导出 TXT</button>
-          </div>
-          <div class="record-actions record-actions-gap">
-            <button class="record-btn primary" id="recordImportJsonBtn">导入 JSON</button>
-            <button class="record-btn" id="recordImportTxtBtn">导入 TXT</button>
-          </div>
-          <input type="file" id="recordImportJsonFile" accept=".json" hidden>
-          <input type="file" id="recordImportTxtFile" accept=".txt" hidden>
-        </div>
-        <div class="record-card io-card">
           <div class="dream-section-title">清空与删除</div>
           <div class="record-actions">
             <button class="record-btn danger" id="recordClearChat">清空聊天记录</button>
@@ -876,66 +987,99 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
         </div>
       </div>
     </div>
-    <!-- 使用大全 -->
+    <!-- 使用大全（主页设置：使用大全 + 声音提醒 + 数据整理，后两张是可折叠卡片，默认收起） -->
     <div class="set-panel" id="setPanelUsage">
       <div class="overlay-body">
-        <div class="usage-hero">
-          <div class="usage-hero-top">
-            <div class="usage-hero-t">使用大全</div>
-            <input type="text" class="usage-search" id="usageSearch" placeholder="搜功能，如“来电”" maxlength="20" autocomplete="off">
+        <div class="dream-card fold-card usage-fold-card" id="usageFoldCard">
+          <div class="usage-hero" id="usageHeroHead">
+            <div class="usage-hero-top">
+              <div class="usage-hero-t">使用大全</div>
+              <input type="text" class="usage-search" id="usageSearch" placeholder="搜功能，如“来电”" maxlength="20" autocomplete="off">
+              <span class="fold-arrow"></span>
+            </div>
+            <div class="usage-hero-s">按页面顺序整理，先看会用，再看细节；标题右边的搜索框输入关键词，能直接定位对应功能。点标题可折叠本卡片。</div>
+            <div class="usage-search-tip" id="usageSearchTip" hidden></div>
           </div>
-          <div class="usage-hero-s">按页面顺序整理，先看会用，再看细节；标题右边的搜索框输入关键词，能直接定位对应功能</div>
-          <div class="usage-search-tip" id="usageSearchTip" hidden></div>
-          <div class="usage-sec">① 主页</div>
+          <div class="fold-body"><div class="fold-inner">
+          <div class="usage-sec">主页</div>
           <p class="usage-p"><span class="usage-n">重叠头像</span>显示你与联系人的头像，取自聊天页 ⋯ 设置里的「形象」，未设置时显示虚线占位；直接点这对头像就能进形象设置。头像和签名只在主页出现（刚打开、或从聊天退回主页时），进字卡库、朋友圈、信箱、设置时整块收起，背景只剩下壁纸。</p>
           <p class="usage-p"><span class="usage-n">一句话签名</span>点中间输入框写一句话，边打边存，回到主页还在。</p>
           <p class="usage-p"><span class="usage-n">底部功能栏</span>聊天 / 字卡库 / 朋友圈 / 信箱，最右侧齿轮就是设置。两个设置入口分工：主页齿轮进来看「使用大全」；头像昵称、聊天、通话、记录这些功能设置，在聊天页右上角 ⋯ 里。</p>
-          <div class="usage-sec">② 聊天</div>
-          <p class="usage-p"><span class="usage-n">发消息</span>输入后按回车或点发送。TA 会按「聊天页设置 · 聊天」里的节奏和条数回复，回复前输入框上方会出现「TA正在想怎么回你」。</p>
+          <p class="usage-p"><span class="usage-n">页面切换</span>字卡库、朋友圈、信箱、设置四个页面顶部没有返回键，底部工具栏常驻（包括设置页底部），点工具栏图标即可互相切换或去聊天页；也可以左右滑动切换，顺序是 字卡库 → 朋友圈 → 信箱 → 设置。字卡库内容区左右滑动可切「字卡 / 颜文字 / 表情包 / 拍一拍」，信箱列表左右滑动可切「TA的来信 / 我的写信 / TA的回信」。去主页：工具栏点「聊天」，再点聊天页左上角返回键。</p>
+          <p class="usage-p"><span class="usage-n">未读红点</span>聊天有新消息、朋友圈有新动态或新回复、信箱有新邮件或回信时，对应图标右上角会亮红点；打开看过一次就消失，没看完关掉页面，红点下次还在。</p>
+          <div class="usage-sec">聊天</div>
+          <p class="usage-p"><span class="usage-n">发消息</span>输入后按回车或点发送。TA 会按「聊天页设置 · 聊天」里的节奏和条数回复，回复前输入框上方会出现「TA正在想怎么回你」，后面的三个点会 1 点 → 2 点 → 3 点 → 消失，动态循环直到回复出现。</p>
           <p class="usage-p"><span class="usage-n">表情与颜文字</span>点输入框左侧的笑脸按钮，从字卡库里挑一个，点一下就发出去。</p>
           <p class="usage-p"><span class="usage-n">问卷</span>笑脸按钮右边那个「圆圈问号」按钮，功能还在设计中，先占个位。</p>
           <p class="usage-p"><span class="usage-n">拍一拍</span>点联系人头像弹出拍一拍面板，选一句发出去；面板里可开关「自动转换人称」，把文案里的「我」换成对方昵称。</p>
-          <p class="usage-p"><span class="usage-n">来电</span>每条消息后按概率来电，可接听或拒接。接听后点最小化会变成可拖动的小泡泡，跨页面保留，点一下还原；15 秒不接听记作未接来电。</p>
+          <p class="usage-p"><span class="usage-n">来电</span>每条消息后按概率来电，可接听或拒接。接听后点最小化会变成可拖动的小泡泡，跨页面保留，点一下还原；30 秒不接听记作未接来电。</p>
           <p class="usage-p"><span class="usage-n">消息时间</span>头像正下方只显示时刻；每天的第一条消息上方会单独标一行「几月几日」（居中，和拍一拍同一行样式）。朋友圈、信箱的发布时间仍是完整的「几月几日 时:分」。</p>
           <p class="usage-p"><span class="usage-n">引用与撤回</span>长按消息气泡，气泡上方会浮出「引用」「撤回」两个小图标：「引用」把这条消息挂在输入框上方，回复发出后气泡顶上会带一条引用小字；「撤回」删除这条消息并留一行提示。点气泡以外的空白处或滚动一下，小图标就会收起。设置 · 聊天里的「撤回引用」调 TA 的两个概率：撤回概率 = TA 发完消息后过一会儿自己反悔撤回的概率；引用概率 = TA 回你时把你最近一条原话带在气泡顶上的概率。</p>
-          <div class="usage-sec">③ 字卡库</div>
+          <p class="usage-p"><span class="usage-n">离线消息</span>打开「主动联系」后，就算你没开着这个页面，TA 也会照常给你发消息：离开 1 天内最多 5 条，1~3 天每天约 3 条，3~5 天每天 1 条，5~15 天每 2 天 1 条，15~30 天每 5 天 1 条，超过一个月就偶尔冒个泡（3~5 条）。消息会带上你离开期间的真实时间、按时间排进聊天记录，偶尔还有一两条深夜消息；主页聊天图标会亮红点，进聊天页就能看到 TA 在你不在时说了什么。</p>
+          <div class="usage-sec">字卡库</div>
           <p class="usage-p"><span class="usage-n">四类内容</span>字卡（文本）、拍一拍、表情包（图片）、颜文字。聊天、来信、拍一拍都从这里取内容。</p>
           <p class="usage-p"><span class="usage-n">分组管理</span>顶部可切换分组；点「+ 新建分组」分组条里会直接长出输入框，打完字按回车或「确定」即可，不用弹窗、页面也不会被压缩。</p>
           <p class="usage-p"><span class="usage-n">禁用分组</span>点某个分组后，下方那行的分组名右边有「禁用本组」：禁用后联系人聊天回复、发朋友圈、写来信都不会再从这组取字卡（你自己仍能看到、编辑、导出）。再点一下「已禁用」即可恢复。</p>
           <p class="usage-p"><span class="usage-n">搜索与批量</span>右上角放大镜搜关键字；进入批量模式后可多选删除。</p>
           <p class="usage-p"><span class="usage-n">添加与编辑</span>底部按钮新增条目；点已有条目可修改或删除。</p>
-          <div class="usage-sec">④ 朋友圈</div>
-          <p class="usage-p"><span class="usage-n">发动态</span>右上角相机图标，写下这一刻的想法后发表；TA 有时也会自己发一条；你发完动态后，TA 的回应会直接落在你那条动态的评论区里，不会另起一条。</p>
+          <div class="usage-sec">朋友圈</div>
+          <p class="usage-p"><span class="usage-n">发动态</span>右上角相机图标，写下这一刻的想法后发表。TA 自己也会发动态，约每 1~2 天一条（间隔 12~48 小时随机）；你发的每一条 TA 都会回应，不秒回但最晚 12 小时内，回应直接落在你那条动态的评论区里，不会另起一条。</p>
           <p class="usage-p"><span class="usage-n">换封面</span>点顶部封面图，从相册选一张；弹出调整页后按住画面拖动，选要露出的那一段，点「确定」作为封面。原图完整保存，随时可以再调。</p>
-          <p class="usage-p"><span class="usage-n">评论与回复</span>点动态正文，底部会弹出输入条、自动聚焦，直接打字即可；点联系人的评论则会标注「回复 联系人」。发出去显示成「我 回复 联系人：…」，并会留在你点的那条动态里（发出后那条动态会自动滚进视野并闪一下边框）。我只能回复联系人，联系人也只回复你，不会自己回自己。</p>
-          <p class="usage-p"><span class="usage-n">新动态红点</span>联系人发了新动态或回复了评论，底部工具栏的相机图标右上角会亮一个红点，进一次朋友圈就消失。</p>
-          <div class="usage-sec">⑤ 信箱</div>
-          <p class="usage-p"><span class="usage-n">写信</span>右上角笔图标，收件人固定为联系人，正文里可以插入字卡内容。</p>
+          <p class="usage-p"><span class="usage-n">评论与回复</span>点动态正文，底部会弹出输入条、自动聚焦，直接打字即可；点联系人的评论则会标注「回复 联系人」。发出去显示成「我 回复 联系人：…」，并会留在你点的那条动态里（发出后那条动态会自动滚进视野并闪一下边框）。我只能回复联系人，联系人也只回复你，不会自己回自己。TA 回评论不必每条都回，但连续几条没回会补一条，不会全程不吭声。</p>
+          <p class="usage-p"><span class="usage-n">新动态红点</span>TA 发了新动态或回复了你的评论，主页底部功能栏的朋友圈图标右上角会亮红点；进朋友圈顶部会出现「N 条新消息」胶囊（参考微信），每点一次查看一条，从最早的看到最近的，胶囊会一直显示剩余条数，全部看完红点才消失；没点完就退出，红点会一直留着提醒你。</p>
+          <div class="usage-sec">信箱</div>
+          <p class="usage-p"><span class="usage-n">写信</span>右上角笔图标进入整页信纸：顶部左侧返回键，中间居中「写给 昵称」和年.月.日，右侧实时显示写了多少字；白纸左列是日期、周几、月份，右侧直接写正文（第一行浅色提示，落笔即消失）。纸张底部有「夹图」「夹表情包」两个气泡按钮——夹图从手机相册选一张、选完确认后显示在信纸上方的附件条（不占信纸本身），夹表情包从字卡库的表情包里挑一个；点 × 可移除，随信寄出后显示在信纸最上方。写完点「寄出」即可（无取消键，返回键可退出）。信纸页底部也可点「回信」，回信自动带入原信标题。</p>
           <p class="usage-p"><span class="usage-n">读信</span>点信封会有拆信动画，展开后阅读全文；信纸页底部可点「回信」。</p>
-          <div class="usage-sec">⑥ 聊天页设置 · 形象</div>
+          <p class="usage-p"><span class="usage-n">信件统计</span>进入信箱默认停在「TA的来信」。状态行在「信箱」标题正下方：全部时是「共 X 封，Y 封未看」——Y 一直显示，有未读时红色、点一下直达最早那封未读信（列表滚过去并闪一下标记），没有未读时黑色常显；点「TA的来信」变成「共 X 封 • 有未拆/无未拆」，点「我的写信」变成「共 X 封 • 已寄出」，点「TA的回信」变成「共 X 封 • 有未拆/无未拆」，其中 X 只算当前分类的数量，不是三类合计。三个分类在统计行下方一行排开（TA的来信、我的写信、TA的回信，右侧直接标数字），点一下筛选该类（选中项下方出现横线），再点一下恢复全部；在信件列表上左右滑动也能按「来信 → 写信 → 回信」切换分类。</p>
+          <p class="usage-p"><span class="usage-n">信件列表</span>信件按月份分组：每月信件上方是一条分界横线，横线左侧标注月份（如「11 月」）、右侧是当月多少封（如「5 封」）；横线下方是该月的气泡卡片，卡内每封信之间用横线隔开。每封信一格：左侧是写信日期（月/日，如 11/19，日期下方标周几），与右侧内容之间用竖虚线隔开；右侧是信件内容的前两行，底部小一号字标注字数——来信和回信还会标注已读/未读（未读红色），我的写信只标字数。点一下拆信阅读。</p>
+          <p class="usage-p"><span class="usage-n">TA的来信</span>TA 自己也会给你写信，约 1~3 天一封（间隔 24~72 小时随机，不太少也不频繁）；内容从字卡库取词（禁用分组取不到），可带颜文字，一封信最多 1 个表情包、字卡不超过 20 个。表情包（含图片型）单独存、不混进文字正文，拆开信纸时显示在最上方——图片型按图片插入、文字型按大字显示，下方才是信的文字内容。来信会点亮信箱红点。</p>
+          <p class="usage-p"><span class="usage-n">TA的回信</span>你每发一封信，TA 有约三分之二的概率回信——不会每封都回、也绝不会全程不回（连续 3 封没回必回一封）；回信时间 30 分钟~6 小时随机，不快也不慢。回信针对你的信用字卡回复，一封最多 1 个表情包（同样支持图片型，显示在信纸最上方）、字卡不超过 10 个。</p>
+          <div class="usage-sec">聊天页设置 · 形象</div>
           <p class="usage-p"><span class="usage-n">头像与昵称</span>点圆形头像从相册更换，右侧输入框改昵称，改完立即生效并自动保存。</p>
           <p class="usage-p"><span class="usage-n">情侣头像</span>点「+」一次选两张（第 1 张联系人、第 2 张我）存成一组；点这组就应用；长按 0.5 秒出现「−」可删除；最多 3 组。</p>
           <p class="usage-p"><span class="usage-n">壁纸美化</span>点左侧方框从相册选图，整站背景都换成它，选完立即生效并自动保存；右侧滑杆调通透度，往右壁纸更清透、往左更朦胧，字更好认；点「清除壁纸」恢复白底。</p>
           <p class="usage-p"><span class="usage-n">字体气泡</span>①气泡通透度：滑杆从「透」到「实」，往左拖聊天气泡越透（壁纸透出来）、往右越实，100% 是原本的实底；字卡库卡片、功能大全、朋友圈、信箱、设置卡片会一起跟着变。②字体跟随壁纸反色：打开后按壁纸深浅自动换气泡里的文字颜色（深色壁纸白字、浅色壁纸黑字），关掉就是统一的黑色。两项都即时生效并自动保存。</p>
           <p class="usage-p"><span class="usage-n">自动保存</span>形象页的头像、昵称改完立即生效并自动保存，不需要再点「保存」。</p>
-          <div class="usage-sec">⑦ 聊天页设置 · 聊天</div>
+          <div class="usage-sec">聊天页设置 · 聊天</div>
           <p class="usage-p"><span class="usage-n">节奏速度</span>收到消息后等几秒再回，最短到最长之间随机，模拟打字时间。默认最短 2 秒、最长 120 秒，可自行填写，填完自动保存。</p>
           <p class="usage-p"><span class="usage-n">回复次数</span>一轮回复几条，在最少与最多之间随机。</p>
           <p class="usage-p"><span class="usage-n">多样选择</span>三个概率分别决定这条回复是不是拍一拍、表情包、颜文字；都不中就是普通文字。</p>
           <p class="usage-p"><span class="usage-n">拼卡回复</span>开启后一条消息里拼几段短句，片段之间统一用 / 分隔；「拼卡内·字卡数量」控制最多拼几张字卡，下面两项控制拼卡内部用表情包、颜文字的比例。</p>
           <p class="usage-p"><span class="usage-n">已读不回</span>按概率直接不回复，制造一点真实感，默认关闭。</p>
           <p class="usage-p"><span class="usage-n">主动联系</span>每隔设定秒数检查一次，按概率主动给你发消息，这类消息的气泡下方会标一行「主动」（与正文同色、字号小一号）；不开就一直等你先说话。</p>
-          <div class="usage-sec">⑧ 聊天页设置 · 通话</div>
+          <div class="usage-sec">聊天页设置 · 通话</div>
           <p class="usage-p"><span class="usage-n">联系人来电概率</span>联系人每条消息后按这个概率来电，调到 0 就不会再有来电。</p>
           <p class="usage-p"><span class="usage-n">联系人禁止挂断通话</span>开启后联系人不会主动结束通话，只能由我手动挂断。</p>
           <p class="usage-p"><span class="usage-n">来电浮窗背景设置</span>点「从相册选择」选一张图，在弹窗里按住图片自由滑动选好区域，点「确认」上传；「清除」恢复默认。设置里的小图仅作预览，点击不会有反应。</p>
-          <div class="usage-sec">⑨ 聊天页设置 · 记录</div>
+          <div class="usage-sec">聊天页设置 · 记录</div>
           <p class="usage-p"><span class="usage-n">消息统计与搜索</span>顶部显示当前聊天总条数，输入关键字可搜出命中的历史消息。</p>
-          <p class="usage-p"><span class="usage-n">导出与导入</span>JSON 是带说话人的结构化记录，TXT 是纯文本对话；导入对应格式即可恢复对话。</p>
-          <p class="usage-p"><span class="usage-n">清空与删除</span>「清空聊天记录」只删对话；「删除TA」会连邮件、朋友圈一起清空，且不会自动补发。</p>
+          <p class="usage-p"><span class="usage-n">清空与删除</span>「清空聊天记录」只删对话；「删除TA」会连邮件、朋友圈一起清空，且不会自动补发。聊天记录的导出 / 导入统一在主页设置 · 数据整理里操作，这里不再单独提供。</p>
           <div class="usage-sec">小贴士</div>
-          <p class="usage-p"><span class="usage-n">数据存在哪里</span>所有内容都存在当前浏览器的本地存储里，不上传云端；换浏览器或换设备不会自动带过去，重要的聊天建议定期导出 JSON。</p>
+          <p class="usage-p"><span class="usage-n">数据存在哪里</span>所有内容都存在当前浏览器的本地存储里，不上传云端；换浏览器或换设备不会自动带过去。用主页设置里的「数据整理」可以整包导出 / 导入备份：点「导出 JSON」或「导出 TXT」时弹出选择框，勾选要备份的类别（聊天记录、字卡库、朋友圈、邮箱，以及「壁纸·头像·昵称·功能设置」——壁纸、通透度、头像昵称、情侣头像、聊天频率等功能设置都归在这里，默认勾上）；导入的文件会覆盖对应类别的现有数据，设置项导入后立即恢复生效。</p>
           <p class="usage-p"><span class="usage-n">自动保存</span>聊天设置、通话设置、头像与昵称都是改完即时生效并自动保存，不需要按「保存」按钮。</p>
+          <p class="usage-p"><span class="usage-n">折叠卡片与开关样式</span>使用大全页里的「声音提醒」「数据整理」是折叠卡片：默认收起只显示标题（与「使用大全」同字号），点标题展开看到具体开关和按钮，再点收起。全局的开关统一是方框打勾样式（勾选后黑底白勾）；界面文字与图标默认黑色。</p>
+          </div></div>
+        </div>
+        <div class="dream-card fold-card" id="foldSoundCard">
+          <div class="fold-head"><span class="fold-title fold-title-lg">声音提醒</span><span class="fold-arrow"></span></div>
+          <div class="fold-body"><div class="fold-inner">
+            <div class="dream-row"><label>接收新消息声音提醒</label><label class="switch"><input type="checkbox" id="notifyMsgOn"><span class="slider"></span></label></div>
+            <div class="dream-note">开启后，收到联系人新消息时发出声音提醒。</div>
+            <div class="dream-row"><label>接收来电声音提醒</label><label class="switch"><input type="checkbox" id="notifyCallOn"><span class="slider"></span></label></div>
+            <div class="dream-note">开启后，联系人来电时发出声音提醒。</div>
+          </div></div>
+        </div>
+        <div class="dream-card fold-card" id="foldExpCard">
+          <div class="fold-head"><span class="fold-title fold-title-lg">数据整理</span><span class="fold-arrow"></span></div>
+          <div class="fold-body"><div class="fold-inner">
+            <div class="dream-note">导出或导入：聊天记录、字卡库、朋友圈、邮箱（JSON / TXT 两种格式，TXT 内容与 JSON 相同），换手机或电脑时备份恢复用。导出时再选择要备份的数据类别（单选或全选）。</div>
+            <div class="exp-btn-row">
+              <button class="exp-btn" id="expExportJson" type="button">导出 JSON</button>
+              <button class="exp-btn" id="expExportTxt" type="button">导出 TXT</button>
+              <button class="exp-btn" id="expImportBtn" type="button">导入数据</button>
+            </div>
+            <input type="file" id="expImportFile" accept=".json,.txt" hidden>
+          </div></div>
         </div>
       </div>
     </div>
@@ -956,6 +1100,20 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
   <div class="modal-title" id="itemModalTitle">添加</div>
   <div class="nickname-field"><label id="itemInputLabel">内容</label><textarea class="item-textarea" id="itemInput" rows="5"></textarea></div>
   <div class="modal-actions"><button class="modal-btn btn-cancel" id="itemCancel">取消</button><button class="modal-btn btn-save" id="itemSave">保存</button></div>
+</div></div>
+
+<!-- 导出数据整理：点导出按钮后选择类别（单选或全选） -->
+<div class="modal-mask" id="expSelModal"><div class="modal-box">
+  <div class="modal-title">选择导出数据</div>
+  <div class="export-cats" id="expSelCats">
+    <label class="export-cat"><input type="checkbox" value="chat" checked><span>聊天记录</span></label>
+    <label class="export-cat"><input type="checkbox" value="cards" checked><span>字卡库</span></label>
+    <label class="export-cat"><input type="checkbox" value="moments" checked><span>朋友圈</span></label>
+    <label class="export-cat"><input type="checkbox" value="mail" checked><span>邮箱</span></label>
+    <label class="export-cat"><input type="checkbox" value="settings" checked><span>壁纸·头像·昵称·功能设置</span></label>
+    <label class="export-cat"><input type="checkbox" id="expSelAll" checked><span>全选</span></label>
+  </div>
+  <div class="modal-actions"><button class="modal-btn btn-cancel" id="expSelCancel">取消</button><button class="modal-btn btn-save" id="expSelOk">导出</button></div>
 </div></div>
 
 <!-- 导出字卡库：选分类 + 选格式 -->
@@ -998,14 +1156,35 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
   <div class="modal-actions"><button class="modal-btn btn-cancel" id="coverCropCancel">取消</button><button class="modal-btn btn-save" id="coverCropSave">确定</button></div>
 </div></div>
 
-<div class="modal-mask" id="mailModal"><div class="modal-box">
-  <div class="modal-title">写信</div>
-  <div class="nickname-field"><label>收件人</label><input type="text" class="nickname-input" id="mailTo" disabled></div>
-  <div class="nickname-field"><label>标题</label><input type="text" class="nickname-input" id="mailTitle" maxlength="30"></div>
-  <div class="nickname-field"><label>正文</label><textarea class="mail-textarea" id="mailText" rows="5"></textarea></div>
-  <div class="nickname-field"><label>插入字卡</label><div class="pick-bar" id="mailPickBar"></div></div>
-  <div class="modal-actions"><button class="modal-btn btn-cancel" id="mailCancel">取消</button><button class="modal-btn btn-save" id="mailSave">发送</button></div>
-</div></div>
+<!-- 写信新页面：顶部返回键 + 居中「写给 昵称 / 年.月.日」+ 右侧实时字数；附件预览条（夹图/夹表情包的结果，显示在信纸上方而非信纸上）；
+     中间白纸（左列 日/周几/月份，竖线分隔，右侧写信）；底部栏：夹图（相册）/夹表情包（字卡库）气泡按钮 + 寄出 -->
+<div class="overlay-page write-page" id="mailWritePage">
+  <div class="wp-top">
+    <div class="nav-back" id="wpBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="wp-top-center">
+      <div class="wp-title">写给 <span id="wpTo">昵称</span></div>
+      <div class="wp-date" id="wpDate">2026.11.19</div>
+    </div>
+    <div class="wp-count" id="wpCount">0 字</div>
+  </div>
+  <div class="wp-attach-strip" id="wpAttachStrip" hidden></div>
+  <div class="wp-paper">
+    <div class="wp-side">
+      <div class="wp-day" id="wpDay">19</div>
+      <div class="wp-week" id="wpWeek">周四</div>
+      <div class="wp-month" id="wpMonth">11月</div>
+    </div>
+    <div class="wp-divider"></div>
+    <textarea class="wp-input" id="wpText" placeholder="写下给对方的信..."></textarea>
+  </div>
+  <div class="wp-bottom">
+    <div class="wp-attach">
+      <button class="wp-chip" id="wpImgBtn" type="button">夹图</button>
+      <button class="wp-chip" id="wpStickerBtn" type="button">夹表情包</button>
+    </div>
+    <button class="wp-send" id="wpSend" type="button">寄出</button>
+  </div>
+</div>
 
 <div class="env-mask" id="envelopeModal"><div class="envelope"><div class="env-letter"></div><div class="env-body"></div><div class="env-flap"></div></div><div class="env-hint">正在拆开信件…</div></div>
 
@@ -1013,6 +1192,7 @@ body.has-wallpaper .set-toolbar-wrap,body.has-wallpaper .chat-nav,body.has-wallp
   <div class="paper-paper">
     <div class="paper-title" id="mailDetailTitle">信件</div>
     <div class="paper-from" id="mailDetailFrom">发件人</div>
+    <div class="paper-sticker" id="mailDetailSticker" hidden></div>
     <div class="paper-text" id="mailDetailText"></div>
     <div class="paper-sign" id="mailDetailTime"></div>
   </div>
@@ -1091,7 +1271,8 @@ let chatSettings={
   autoContactOn:false, autoContactPct:30, autoContactSec:60,
   patPct:15, emojiPct:15, kaomojiPct:10,
   pinCardOn:false, pinCardPct:20, pinEmojiPct:20, pinKaomojiPct:20, pinCardCount:5,
-  callPct:1, recallPct:0, quotePct:0, callBg:'', callBgPos:'50% 50%', callNoAutoHangup:false
+  callPct:1, recallPct:0, quotePct:0, callBg:'', callBgPos:'50% 50%', callNoAutoHangup:false,
+  notifyMsgOn:false, notifyCallOn:false
 };
 
 /* 逐键独立容错：某个键的 JSON 损坏只影响它自己，不会连带后面所有键加载失败 */
@@ -1165,14 +1346,13 @@ function saveBubbleSolidity(){
 const $=id=>document.getElementById(id);
 const splash=$('splash'),home=$('home'),chat=$('chat'),cardLib=$('cardLib'),moments=$('moments'),mail=$('mail');
 const chatBack=$('chatBack'),navNickname=$('navNickname'),navSetting=$('navSetting'),chatBody=$('chatBody'),chatInput=$('chatInput'),sendBtn=$('sendBtn');
-const libBack=$('libBack'),libTabs=$('libTabs'),libBody=$('libBody'),libGroups=$('libGroups'),libGroupBar=$('libGroupBar'),libBatchBar=$('libBatchBar'),libBatchCount=$('libBatchCount'),libBatchDel=$('libBatchDel'),libSearchBtn=$('libSearchBtn'),libSearchBar=$('libSearchBar'),libSearchInput=$('libSearchInput');
-const momentsBack=$('momentsBack'),momentPublishBtn=$('momentPublishBtn'),momentCover=$('momentCover'),mcInner=$('mcInner'),mcAvatar=$('mcAvatar'),mcName=$('mcName'),momentFeed=$('momentFeed'),coverFile=$('coverFile');
-const mailBack=$('mailBack'),mailWriteBtn=$('mailWriteBtn'),mailList=$('mailList');
-const profileModal=$('profileModal'),otherNickname=$('otherNickname'),myNickname=$('myNickname'),otherAvatarFileModal=$('otherAvatarFileModal'),myAvatarFileModal=$('myAvatarFileModal'),profileCancel=$('profileCancel'),profileSave=$('profileSave');
+const libTabs=$('libTabs'),libBody=$('libBody'),libGroups=$('libGroups'),libGroupBar=$('libGroupBar'),libBatchBar=$('libBatchBar'),libBatchCount=$('libBatchCount'),libBatchDel=$('libBatchDel'),libSearchBtn=$('libSearchBtn'),libSearchBar=$('libSearchBar'),libSearchInput=$('libSearchInput');
+const momentPublishBtn=$('momentPublishBtn'),momentCover=$('momentCover'),mcInner=$('mcInner'),mcAvatar=$('mcAvatar'),mcName=$('mcName'),momentFeed=$('momentFeed'),coverFile=$('coverFile');
+const mailWriteBtn=$('mailWriteBtn'),mailList=$('mailList');const profileModal=$('profileModal'),otherNickname=$('otherNickname'),myNickname=$('myNickname'),otherAvatarFileModal=$('otherAvatarFileModal'),myAvatarFileModal=$('myAvatarFileModal'),profileCancel=$('profileCancel'),profileSave=$('profileSave');
 const itemModal=$('itemModal'),itemModalTitle=$('itemModalTitle'),itemInputLabel=$('itemInputLabel'),itemInput=$('itemInput'),itemCancel=$('itemCancel'),itemSave=$('itemSave');
 const momentModal=$('momentModal'),momentText=$('momentText'),momentCancel=$('momentCancel'),momentSave=$('momentSave');
-const mailModal=$('mailModal'),mailTo=$('mailTo'),mailTitle=$('mailTitle'),mailText=$('mailText'),mailPickBar=$('mailPickBar'),mailCancel=$('mailCancel'),mailSave=$('mailSave');
-const mailDetailModal=$('mailDetailModal'),mailDetailTitle=$('mailDetailTitle'),mailDetailFrom=$('mailDetailFrom'),mailDetailText=$('mailDetailText'),mailDetailTime=$('mailDetailTime'),mailDetailClose=$('mailDetailClose'),mailReplyBtn=$('mailReplyBtn'),envelopeModal=$('envelopeModal');
+const mailModal=null;   /* 写信改为整页 #mailWritePage（旧弹窗已移除） */
+const mailDetailModal=$('mailDetailModal'),mailDetailTitle=$('mailDetailTitle'),mailDetailFrom=$('mailDetailFrom'),mailDetailText=$('mailDetailText'),mailDetailSticker=$('mailDetailSticker'),mailDetailTime=$('mailDetailTime'),mailDetailClose=$('mailDetailClose'),mailReplyBtn=$('mailReplyBtn'),envelopeModal=$('envelopeModal');
 const patMask=$('patMask'),patList=$('patList'),patCancel=$('patCancel'),patHeadAvatar=$('patHeadAvatar'),patAutoPronounToggle=$('patAutoPronoun');
 const emojiBtn=$('emojiBtn'),stickerMask=$('stickerMask'),stickerGrid=$('stickerGrid');let stickerCat='emoji';
 const callCard=$('callCard'),callAvatar=$('callAvatar'),callName=$('callName'),callStatus=$('callStatus'),callTimer=$('callTimer'),callActions=$('callActions'),callInCallActions=$('callInCallActions'),callReject=$('callReject'),callAnswer=$('callAnswer'),callHangup=$('callHangup'),callMinBtn=$('callMinBtn'),callMini=$('callMini'),callMiniName=$('callMiniName'),callMiniTimer=$('callMiniTimer'),callMiniHangup=$('callMiniHangup'),callBgClear=$('callBgClear'),callBgFile=$('callBgFile'),callBgPreview=$('callBgPreview');
@@ -1240,7 +1420,7 @@ function hidePanels(){homeDefault.classList.remove('show');Object.values(panelMa
 function hideAll(){allScreens.forEach(e=>e.classList.remove('show'));hidePanels()}
 function setDock(a){document.querySelectorAll('.app-item').forEach(i=>i.classList.toggle('active',i.dataset.app===a))}
 function showHome(){hideAll();home.classList.add('show');homeDefault.classList.add('show');setDock(null);renderHomeWidget();if(replyComposer&&replyComposer.classList.contains('show'))closeMomentReply()}
-function showChat(){hideAll();chat.classList.add('show');setDock(null);syncChatViewport();chatBody.scrollTop=chatBody.scrollHeight}
+function showChat(){hideAll();chat.classList.add('show');setDock(null);syncChatViewport();chatBody.scrollTop=chatBody.scrollHeight;setAppDot('chat',false)}
 /* 键盘弹出时让聊天页贴合可视视口：顶栏不动，输入栏自然贴着键盘上移，避免整页被顶起跳动 */
 /* 防颤抖：只在数值真正变化时才写 CSS 变量，且四舍五入到整数像素。
    否则滚动/回弹期间 scroll 事件高频触发，transform 位移改变可视视口 offset，
@@ -1270,24 +1450,92 @@ function showPanel(name){
   hideAll();home.classList.add('show');panelMap[name].classList.add('show');setDock(name);
 }
 function showCardLib(){showPanel('cardLib');groupEditor=null;closeLibSearch();renderLib()}
-function showMoments(){seedMomentsIfEmpty();showPanel('moments');renderMoments();setMomentsDot(false)}
-function showMail(){seedMailsIfEmpty();showPanel('mail');renderMails()}
-/* 朋友圈未读红点：联系人发了新动态或回复了评论时亮起，进朋友圈就清掉 */
-function setMomentsDot(on){
-  const d=$('momentsDot');if(d)d.hidden=!on;
-  try{localStorage.setItem('momentsUnread',on?'1':'0')}catch(e){}
+function showMoments(){seedMomentsIfEmpty();runMomentPlan();showPanel('moments');renderMoments();updateMomentsNotify()}
+function showMail(){seedMailsIfEmpty();mailFilter='letter';showPanel('mail');renderMails();setAppDot('mail',false)}
+
+/* ===== 左右滑动切换 =====
+   应用级（字卡库 → 朋友圈 → 信箱 → 设置）：字卡库/朋友圈/信箱在顶部栏区域滑动，设置整页可滑；
+   内容级：信箱列表横滑切「TA的来信 / 我的写信 / TA的回信」，字卡库内容横滑切「字卡 / 颜文字 / 表情包 / 拍一拍」 */
+function swipeToApp(name){
+  if(name==='settings'){openSettings('usage','home');return}
+  if(document.body.classList.contains('settings-open')){document.body.classList.remove('settings-open');settingsHub.classList.remove('show');setDock(null)}
+  showPanel(name);
+  if(name==='cardLib'){groupEditor=null;closeLibSearch();renderLib()}
+  else if(name==='moments'){seedMomentsIfEmpty();runMomentPlan();renderMoments();updateMomentsNotify()}
+  else if(name==='mail'){seedMailsIfEmpty();renderMails();setAppDot('mail',false)}
 }
-function loadMomentsDot(){
-  let v='';
-  try{v=localStorage.getItem('momentsUnread')||''}catch(e){}
-  const d=$('momentsDot');if(d)d.hidden=(v!=='1');
+const APP_ORDER=['cardLib','moments','mail','settings'];
+function appSwipe(from,dir){
+  const i=APP_ORDER.indexOf(from),n=i+(dir==='left'?1:-1);
+  if(n<0||n>=APP_ORDER.length)return;   /* 到头不再滑 */
+  swipeToApp(APP_ORDER[n]);
+}
+function bindHSwipe(el,onSwipe,zoneSel){
+  if(!el)return;
+  let x0=0,y0=0,t0=0,ok=false;
+  el.addEventListener('touchstart',e=>{
+    const t=e.touches[0];x0=t.clientX;y0=t.clientY;t0=Date.now();
+    ok=!zoneSel||!!(e.target.closest&&e.target.closest(zoneSel));
+    if(ok&&e.target.closest&&e.target.closest('input,textarea'))ok=false;
+  },{passive:true});
+  el.addEventListener('touchend',e=>{
+    if(!ok)return;ok=false;
+    const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;
+    if(Date.now()-t0>700||Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.6)return;
+    onSwipe(dx<0?'left':'right');
+  },{passive:true});
+}
+/* 应用级：三个面板在顶部栏横滑，设置页整页横滑 */
+bindHSwipe(cardLib,d=>appSwipe('cardLib',d),'.chat-nav');
+bindHSwipe(moments,d=>appSwipe('moments',d),null);
+bindHSwipe(mail,d=>appSwipe('mail',d),'.chat-nav');
+bindHSwipe(settingsHub,d=>appSwipe('settings',d),null);
+/* 信箱三分类横滑 */
+const MAIL_ORDER=['letter','mine','reply'];
+function cycleMailFilter(dir){
+  if(!mailFilter)mailFilter=dir==='left'?'letter':'reply';
+  else{
+    const i=MAIL_ORDER.indexOf(mailFilter);
+    mailFilter=MAIL_ORDER[(i+(dir==='left'?1:MAIL_ORDER.length-1))%MAIL_ORDER.length];
+  }
+  renderMails();
+}
+bindHSwipe(mailList,cycleMailFilter,'.mail-list');
+/* 字卡库四分类横滑 */
+function cycleLibCat(dir){
+  const order=['zika','kaomoji','emoji','pat'],i=order.indexOf(libCat);
+  libCat=order[(i+(dir==='left'?1:order.length-1))%order.length];
+  libTabs.querySelectorAll('.lib-tab').forEach(x=>x.classList.toggle('active',x.dataset.cat===libCat));
+  libGroup='全部';libKeyword='';libSearchInput.value='';groupEditor=null;exitBatch();renderLib();
+}
+bindHSwipe(libBody,cycleLibCat,null);
+/* ===== 主页未读红点：聊天 / 朋友圈 / 邮箱，打开查看即清除，状态持久化 ===== */
+function setAppDot(app,on){
+  const d=$(app+'Dot');if(d)d.hidden=!on;
+  try{localStorage.setItem('unread_'+app,on?'1':'0')}catch(e){}
+}
+function loadAppDots(){
+  ['chat','moments','mail'].forEach(app=>{
+    /* 兼容旧版本：朋友圈旧键 momentsUnread 迁移一次 */
+    if(app==='moments'){
+      try{const old=localStorage.getItem('momentsUnread');if(old!==null&&localStorage.getItem('unread_moments')===null)localStorage.setItem('unread_moments',old)}catch(e){}
+    }
+    let v='';try{v=localStorage.getItem('unread_'+app)||''}catch(e){}
+    const d=$(app+'Dot');if(d)d.hidden=(v!=='1');
+  });
 }
 function momentsVisible(){return !!(moments&&moments.classList.contains('show'))}
+function chatVisible(){return !!(chat&&chat.classList.contains('show'))}
+function mailVisible(){return !!(mail&&mail.classList.contains('show'))}
 
 /* 底部功能栏点击：华为 Mate 20 等机型偶发 click 丢失，补一层 touch 兜底 + 去重 */
 let lastDockTap={t:0,a:''};
 function activateDockApp(i){
-  if(!i||document.body.classList.contains('settings-open'))return;
+  if(!i)return;
+  /* 设置页开着时点工具栏：先收起设置页再切应用（工具栏现在常驻，包括设置页底部） */
+  if(document.body.classList.contains('settings-open')){
+    document.body.classList.remove('settings-open');settingsHub.classList.remove('show');setDock(null);
+  }
   const a=i.dataset.app,now=Date.now();
   /* 同一应用 500ms 内的 click/touchend 只处理一次 */
   if(lastDockTap.a===a&&now-lastDockTap.t<500)return;
@@ -1317,7 +1565,7 @@ document.querySelectorAll('.app-item').forEach(i=>{
     },380);
   },{passive:true});
 });
-chatBack.onclick=showHome;libBack.onclick=showHome;momentsBack.onclick=showHome;mailBack.onclick=showHome;
+chatBack.onclick=showHome;
 
 /* ================= 主页预览（已移除聊天记录预览） ================= */
 function renderHomePreview(){}
@@ -1442,6 +1690,9 @@ function addMsg(side,text,type,flag,quote){
   if(quote)rec.quote=quote;           /* 引用的原消息（我的或 TA 的） */
   history.push(rec);saveHistory();
   renderMsgRow(side,text,type,rec.time,flag,rec.day,rec.quote);
+  if(type!=='system')playMsgSound(); /* 我发消息 / 收到联系人消息都响；系统提示不响 */
+  /* 主页红点：没在聊天页时收到联系人的新消息，聊天图标亮红点；已打开则不算未读 */
+  if(side==='other'&&type!=='system'&&!chatVisible())setAppDot('chat',true);
   return rec;
 }
 /* TA 撤回：发出后按「撤回概率」隔一会儿把这条删掉，并留一行系统提示 */
@@ -1486,6 +1737,15 @@ if(patAutoPronounToggle)patAutoPronounToggle.addEventListener('change',()=>{
 });
 
 /* 输入框左侧表情包/颜文字面板：点选即作为「我」的一条消息发送，并照常触发回复 */
+/* 写信页「夹表情包」借用此面板挑选：挂上钩子后点选不发送消息，而是回调给写信页 */
+let stickerPickHook=null;
+function openStickerPick(cb){
+  stickerCat='emoji';
+  document.querySelectorAll('.sticker-tab').forEach(t=>t.classList.toggle('active',t.dataset.cat==='emoji'));
+  renderStickerGrid();stickerPickHook=cb;stickerMask.classList.add('show');
+  /* 写信页(z355)上打开时把面板临时提到最上层，避免被写信页盖住 */
+  stickerMask.style.zIndex='360';
+}
 function renderStickerGrid(){
   if(!stickerGrid)return;
   stickerGrid.innerHTML='';
@@ -1504,6 +1764,7 @@ function renderStickerGrid(){
       const t=document.createElement('span');t.className='sticker-txt';t.textContent=s;item.appendChild(t);
     }
     item.onclick=()=>{
+      if(stickerPickHook){const h=stickerPickHook;stickerPickHook=null;stickerMask.classList.remove('show');h(s);return}
       addMsg('me',s);
       stickerMask.classList.remove('show');
       afterMyMessage();
@@ -1514,7 +1775,7 @@ function renderStickerGrid(){
 if(emojiBtn)emojiBtn.onclick=()=>{
   stickerCat='emoji';
   document.querySelectorAll('.sticker-tab').forEach(t=>t.classList.toggle('active',t.dataset.cat===stickerCat));
-  renderStickerGrid();stickerMask.classList.add('show');
+  renderStickerGrid();stickerMask.classList.add('show');stickerMask.style.zIndex='';
 };
 document.querySelectorAll('.sticker-tab').forEach(t=>{
   t.onclick=()=>{
@@ -1549,29 +1810,27 @@ function buildPinCard(){
   const rand=a=>a[Math.floor(Math.random()*a.length)];
   const pinEmojiPct=Math.min(100,Math.max(0,Number(chatSettings.pinEmojiPct)||0));
   const pinKaomojiPct=Math.min(100,Math.max(0,Number(chatSettings.pinKaomojiPct)||0));
-  /* 我可自由编辑：1~20 张，默认 5；填错就回落到 5 */
+  /* 我可自由编辑：1~20 张，默认 5；填错就回落到 5。这个值是「上限」不是固定值 */
   let maxCards=Math.floor(Number(chatSettings.pinCardCount));
   if(!isFinite(maxCards)||maxCards<1)maxCards=5;
   maxCards=Math.min(20,maxCards);
-  const pickCount=min=>{
-    const lo=Math.min(min,maxCards);
-    return lo+Math.floor(Math.random()*(maxCards-lo+1));
-  };
+  /* 实际字卡数量在 0~上限 之间随机（含 0） */
+  const pickCount=()=>Math.floor(Math.random()*(maxCards+1));
   const roll=Math.random()*100;
   const parts=[];
   if(emojis.length&&roll<pinEmojiPct){
     /* 字卡拼表情包：字卡若干 + 表情包恰好1个 */
-    const n=pickCount(1);
+    const n=pickCount();
     for(let i=0;i<n;i++)parts.push({t:'text',k:'z',v:rand(texts)});
     const e=rand(emojis);parts.push({t:String(e).startsWith('data:image')?'img':'text',k:'e',v:e});
   }else if(kaomojis.length&&roll<pinEmojiPct+pinKaomojiPct){
     /* 字卡拼颜文字：字卡若干 + 颜文字恰好1个 */
-    const n=pickCount(1);
+    const n=pickCount();
     for(let i=0;i<n;i++)parts.push({t:'text',k:'z',v:rand(texts)});
     parts.push({t:'text',k:'k',v:rand(kaomojis)});
   }else{
-    /* 字卡拼字卡：数量在 2~上限 之间随机；上限填 1 时就只出 1 张 */
-    const n=pickCount(2);
+    /* 字卡拼字卡：数量在 0~上限 之间随机 */
+    const n=pickCount();
     for(let i=0;i<n;i++)parts.push({t:'text',k:'z',v:rand(texts)});
   }
   return parts.length?parts:null;
@@ -1600,6 +1859,7 @@ function settleQuota(state,pct){
 /* 是否已读不回（含来回计数与配额结算）；返回 true 表示本条不回复、完结一条 */
 function checkReadIgnore(){
   if(!chatSettings.readIgnoreOn) return false;
+  if(Number(chatSettings.readIgnorePct)>=100) return true; /* 100%：严格每条都不回复 */
   ignoreState.tick+=2; /* 我发1条 + 联系人回1条 = 一个来回2条 */
   if(ignoreState.budget<0||ignoreState.tick>=QUOTA_WINDOW) settleQuota(ignoreState,chatSettings.readIgnorePct);
   const leftRounds=Math.max(1,(QUOTA_WINDOW-ignoreState.tick)/2); /* 本周期剩余来回数 */
@@ -1669,6 +1929,9 @@ function afterMyMessage(){
     showTyping();
     const delay=getReplyDelay();
     setTimeout(replyOther,delay);
+  }else{
+    /* 联系人抽中已读不回：给一条居中提示，让我知道这条没被理睬 */
+    addMsg('other',(profile.nickname||'TA')+'已读不回','system');
   }
   resetAutoContactTimer();
 }
@@ -1697,7 +1960,7 @@ const msgActBar=document.createElement('div');
 msgActBar.className='msg-act-bar';
 const MSG_ACT_TPL={
   copy:'<button class="msg-act" data-act="copy" title="复制"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>复制</span></button>',
-  quote:'<button class="msg-act" data-act="quote" title="引用"><svg viewBox="0 0 24 24"><path d="M8.7 6.3c-2.4.8-4 3-4 5.7 0 .6.1 1.1.3 1.6h3.3c-.2-.5-.3-1-.3-1.6 0-1.6.9-3 2.3-3.7L8.7 6.3zm8.6 0c-2.4.8-4 3-4 5.7 0 .6.1 1.1.3 1.6h3.3c-.2-.5-.3-1-.3-1.6 0-1.6.9-3 2.3-3.7l-1.6-2z" fill="currentColor" stroke="none"/></svg><span>引用</span></button>',
+  quote:'<button class="msg-act" data-act="quote" title="引用"><svg viewBox="0 0 24 24"><path d="M10 11H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3v6c0 3-1.5 5-4 6"/><path d="M21 11h-4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3v6c0 3-1.5 5-4 6"/></svg><span>引用</span></button>',
   recall:'<button class="msg-act" data-act="recall" title="撤回"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span>撤回</span></button>'
 };
 function setMsgActs(row){
@@ -1785,10 +2048,31 @@ msgActBar.addEventListener('click',e=>{
 });
 $('quoteCancel').onclick=()=>{quoteDraft='';$('quoteBar').hidden=true};
 
+/* 折叠动画速度中和：固定时长下，内容矮的卡片显得慢、内容长的卡片显得快；
+   改为按内容实际高度动态计算时长（像素速度一致），矮卡 0.28s 封底、长卡 0.52s 封顶 */
+function setFoldDuration(card){
+  const body=card&&card.querySelector?card.querySelector('.fold-body'):null;
+  const inner=card&&card.querySelector?card.querySelector('.fold-inner'):null;
+  if(!body||!inner)return;
+  const h=inner.scrollHeight||0;
+  body.style.transitionDuration=Math.max(280,Math.min(520,Math.round(h*0.55)))+'ms';
+}
+/* 使用大全面板：点「使用大全」标题展开/收起整张卡片；点搜索框不折叠 */
+(function(){
+  const card=$('usageFoldCard');if(!card)return;
+  const head=$('usageHeroHead')||card.querySelector('.usage-hero');
+  if(!head)return;
+  head.addEventListener('click',e=>{
+    if(e.target.closest('.usage-search')||e.target.closest('.usage-search-tip'))return;
+    setFoldDuration(card);
+    card.classList.toggle('open');
+  });
+})();
 /* ===== 使用大全搜索：按关键词留下命中的段落和分区 ===== */
 (function(){
   const inp=$('usageSearch'),tip=$('usageSearchTip'),panel=$('setPanelUsage');
   const secs=Array.prototype.slice.call(panel.querySelectorAll('.usage-sec'));
+  const foldCard=$('usageFoldCard');
   function resetAll(){
     panel.querySelectorAll('.usage-sec, .usage-p').forEach(el=>{el.hidden=false});
     tip.hidden=true;tip.classList.remove('none');
@@ -1796,6 +2080,7 @@ $('quoteCancel').onclick=()=>{quoteDraft='';$('quoteBar').hidden=true};
   inp.addEventListener('input',()=>{
     const q=inp.value.trim().toLowerCase();
     if(!q){resetAll();return}
+    if(foldCard)foldCard.classList.add('open'); /* 搜索时自动展开，保证能看到命中结果 */
     let hit=0;
     secs.forEach(sec=>{
       const secHit=sec.textContent.toLowerCase().includes(q);
@@ -1840,6 +2125,71 @@ function resetAutoContactTimer(){
   },sec*1000);
 }
 
+/* ===== 声音提醒：Web Audio 合成，不依赖外部音频文件 ===== */
+let ynAudioCtx=null,ynCallRingTimer=null;
+function ynAudio(){
+  if(ynAudioCtx)return ynAudioCtx;
+  try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;ynAudioCtx=new AC()}catch(e){return null}
+  return ynAudioCtx;
+}
+function ynUnlock(){const c=ynAudio();if(c&&c.state==='suspended'){try{c.resume()}catch(e){}}}
+/* 首次触摸/点击时解锁音频（移动端自动播放策略） */
+document.addEventListener('touchstart',ynUnlock,{passive:true});
+document.addEventListener('mousedown',ynUnlock);
+/* 单音符：freq 频率，at 延迟秒，dur 时长秒，vol 音量 */
+function ynTone(c,freq,at,dur,vol){
+  try{
+    const o=c.createOscillator(),g=c.createGain(),t=c.currentTime+at;
+    o.type='sine';o.frequency.value=freq;
+    /* 清爽短促：快起(0.01s)+快收，不拖尾（与试听页一致） */
+    const fade=Math.min(0.045,dur*0.35);
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(vol,t+0.01);
+    g.gain.setValueAtTime(vol,t+dur-fade);
+    g.gain.linearRampToValueAtTime(0,t+dur);
+    o.connect(g);g.connect(c.destination);
+    o.start(t);o.stop(t+dur+0.01);
+  }catch(e){}
+}
+/* 音频未解锁时先恢复再播，避免 suspended 期间音符堆积、解锁瞬间一起响 */
+function withAudio(fn){
+  const c=ynAudio();if(!c)return;
+  if(c.state==='running'){try{fn(c)}catch(e){}return}
+  if(c.state==='suspended'){
+    try{
+      const p=c.resume();
+      if(p&&typeof p.then==='function'){
+        p.then(()=>{if(c.state==='running'){try{fn(c)}catch(e){}}}).catch(()=>{});
+        return;
+      }
+    }catch(e){}
+    try{c.resume()}catch(e){}
+    if(c.state==='running'){try{fn(c)}catch(e){}}
+  }
+}
+/* 消息提示音：统一用试听 7「清脆B」（987.77Hz 单声短音），我发 / 收到消息都用它 */
+function playMsgSound(){
+  if(!chatSettings.notifyMsgOn)return;
+  const now=Date.now();
+  if(now-(playMsgSound._last||0)<350)return; /* 多条连发时避免声音叠在一起 */
+  playMsgSound._last=now;
+  withAudio(c=>{ynTone(c,987.77,0.02,0.11,0.11)});
+}
+/* 来电铃声：试听 6「双音重复」，两声一组循环两遍，接听或挂断时停止 */
+function playCallRing(){
+  stopCallRing();
+  if(!chatSettings.notifyCallOn)return;
+  const ring=()=>withAudio(c=>{
+    for(let k=0;k<2;k++){
+      ynTone(c,784,k*0.5,0.14,0.11);
+      ynTone(c,988,k*0.5+0.18,0.14,0.11);
+    }
+  });
+  ring();
+  ynCallRingTimer=setInterval(ring,1800);
+}
+function stopCallRing(){if(ynCallRingTimer){clearInterval(ynCallRingTimer);ynCallRingTimer=null}}
+
 /* ================= 来电 / 通话（悬浮气泡模式） ================= */
 let callBusy=false,callRingTimer=null,callDurationTimer=null,callAutoHangupTimer=null,callSec=0;
 function fmtCallTime(s){const p=n=>String(n).padStart(2,'0');return p(Math.floor(s/60))+':'+p(s%60)}
@@ -1859,11 +2209,13 @@ function showIncomingCall(){
   callMinBtn.hidden=true; /* 接听后才可最小化 */
   callActions.hidden=false;callInCallActions.hidden=true;
   callCard.hidden=false;callMini.hidden=true;
-  /* 一直不接听：15 秒后转为未接来电 */
-  callRingTimer=setTimeout(()=>endCall('未接来电'),15000);
+  playCallRing(); /* 来电声音提醒：开关开启时响铃，接听/挂断时停止 */
+  /* 一直不接听：30 秒后转为未接来电 */
+  callRingTimer=setTimeout(()=>endCall('未接来电'),30000);
 }
 function startCall(){
   clearTimeout(callRingTimer);
+  stopCallRing(); /* 接听后停铃声 */
   callStatus.hidden=true;
   callTimer.hidden=false;
   callActions.hidden=true;callInCallActions.hidden=false;
@@ -1882,11 +2234,13 @@ function startCall(){
 }
 function endCall(label){
   clearTimeout(callRingTimer);clearInterval(callDurationTimer);clearTimeout(callAutoHangupTimer);
+  stopCallRing(); /* 挂断/未接后停铃声 */
   callRingTimer=callDurationTimer=callAutoHangupTimer=null;
   callCard.hidden=true;callMini.hidden=true;callMini.style.cssText='';
   applyCallBg(); /* cssText 清空后恢复自定义浮窗背景 */
   if(label){
-    const txt='📞 '+label;
+    /* 未接来电带上联系人昵称，明确是谁的来电未接听 */
+    const txt='📞 '+(label==='未接来电'?((profile.nickname||'TA')+'的来电未接听'):label);
     history.push({side:'other',text:txt,type:'system',time:nowTime(),day:nowDay()});saveHistory();
     renderMsgRow('other',txt,'system',nowTime(),'',nowDay());
   }
@@ -1951,9 +2305,9 @@ callBgModal.onclick=e=>{if(e.target===callBgModal){callBgModal.classList.remove(
   callBgCrop.addEventListener('pointermove',e=>{
     if(!dragging)return;
     const r=callBgCrop.getBoundingClientRect();if(!r.width||!r.height)return;
-    /* 手指右滑 → 看到图更靠左的部分 → 背景 X% 减小，方向直观 */
-    const x=clamp(ox-(e.clientX-sx)/r.width*100);
-    const y=clamp(oy-(e.clientY-sy)/r.height*100);
+    /* 手指右滑 → 看到图更靠左的部分 → 背景 X% 减小，方向直观；乘 0.6 让滑动更慢、更好微调 */
+    const x=clamp(ox-(e.clientX-sx)/r.width*100*0.6);
+    const y=clamp(oy-(e.clientY-sy)/r.height*100*0.6);
     pendingCallBgPos=Math.round(x)+'% '+Math.round(y)+'%';
     callBgCropInner.style.backgroundPosition=pendingCallBgPos;
   });
@@ -2005,6 +2359,7 @@ callMinBtn.onclick=()=>{callCard.hidden=true;callMini.hidden=false};
    主页齿轮 → home：使用大全（后续主页级设置继续加在这里）
    聊天页⋯  → chat：形象 / 聊天 / 通话 / 记录 */
 let settingsScope='chat';
+/* 主页设置只有一个面板（usage：使用大全+消息通知两张卡片），visible=1 时功能栏自动隐藏 */
 const HOME_ONLY_TABS=['usage'];
 function applySettingsScope(scope){
   setTabs.forEach(t=>{
@@ -2030,29 +2385,31 @@ function switchSettingsTab(tab){
 /* 形象页内容（头像、昵称）改完即时生效、即时保存，不再需要底部「保存」 */
 function openSettings(tab,scope){
   settingsScope=scope==='home'?'home':'chat';
-  applySettingsScope(settingsScope);
+  /* 先把设置页显示出来（最优先），后续初始化即使某项出错，页面也已经打开，不会「点了没反应」 */
+  document.body.classList.add('settings-open');
+  if(settingsHub)settingsHub.classList.add('show');
+  setDock('settings');
+  try{applySettingsScope(settingsScope)}catch(e){}
   /* 主页进设置：把头像/签名和可能开着的内嵌面板一起收掉，
      否则半透明的设置页会把字卡库/朋友圈等页面透出来叠在一起 */
-  if(settingsScope==='home')hidePanels();
-  document.body.classList.add('settings-open');
-  settingsHub.classList.add('show');
-  switchSettingsTab(tab||(settingsScope==='home'?'usage':'figure'));
+  if(settingsScope==='home'){try{hidePanels()}catch(e){}}
+  try{switchSettingsTab(tab||(settingsScope==='home'?'usage':'figure'))}catch(e){}
 }
 function closeSettings(){
   document.body.classList.remove('settings-open');
-  settingsHub.classList.remove('show');
+  settingsHub.classList.remove('show');setDock(null);
   /* 从主页进来的，关掉设置时把主页头像/签名重新挂回来 */
   if(settingsScope==='home')showHome();
 }
 navSetting.onclick=e=>{e.stopPropagation();openSettings('figure','chat')};
 setTabs.forEach(t=>t.onclick=()=>switchSettingsTab(t.dataset.tab));
-$('settingsHubBack').onclick=closeSettings;
 
 /* ================= 联系人资料页 ================= */
 function renderDreamProfile(){
   $('dreamAvatar').innerHTML=avatarHTML(profile.avatar,profile.nickname.charAt(0)||'梦');
   $('myAvatar').innerHTML=avatarHTML(myProfile.avatar,myProfile.nickname.charAt(0)||'我');
   $('dreamNickInput').value=profile.nickname;
+  if($('myNickInput2'))$('myNickInput2').value=myProfile.nickname;
   $('dreamAvatarFile').value='';
   $('myAvatarFile2').value='';
   if(typeof applyWallpaper==='function')applyWallpaper();
@@ -2065,6 +2422,15 @@ $('dreamNickInput').oninput=e=>{
   profile.nickname=e.target.value||'梦角';
   saveProfile();renderNav();
   if(typeof refreshAvatars==='function')refreshAvatars();
+};
+/* 我的昵称（形象页）：边打边存，并同步到快捷弹窗、头像字母、朋友圈等处 */
+if($('myNickInput2'))$('myNickInput2').oninput=e=>{
+  myProfile.nickname=e.target.value||'我';
+  saveProfile();
+  if($('myNickname'))$('myNickname').value=myProfile.nickname;
+  if($('myAvatar'))$('myAvatar').innerHTML=avatarHTML(myProfile.avatar,(myProfile.nickname||'我').charAt(0)||'我');
+  if(typeof refreshAvatars==='function')refreshAvatars();
+  if(typeof renderNav==='function')renderNav();
 };
 function applyProfileAvatar(who,data){
   if(who==='me'){
@@ -2131,11 +2497,16 @@ function computeWallLuma(src,done){
 }
 /* 「字体跟随壁纸反色」：壁纸偏暗 → 白字，偏亮 → 黑字；关掉就统一黑字 */
 function applyFontInvert(){
-  const dark=!!fontInvert&&wallLuma!=null&&wallLuma<0.52;
+  /* 部分安卓 WebView（夸克/X5）canvas 取色会失败返回 null、或图片 onload 不触发，
+     这时若还要求 wallLuma<0.52 就永远判不出深色，深色壁纸下气泡字仍是黑的。
+     兜底：反色开启 + 有壁纸 + 亮度未知或偏暗，一律给白字；只有明确偏亮才回黑字。 */
+  const dark=!!fontInvert&&!!wallpaper&&(wallLuma==null||wallLuma<0.52);
   const root=document.documentElement;
   /* 正文与次要文字（时刻 / 主动标注 / 拍一拍 / 来电挂断）一起反色，避免壁纸变深后只剩气泡正文变白 */
   root.style.setProperty('--msg-ink',dark?'#f5f5f7':'#1f2328');
   root.style.setProperty('--msg-sub',dark?'rgba(245,245,247,.70)':'#8a919b');
+  /* 气泡底一起转深：白字配深底才看得清；--card-rgb 只用于聊天气泡，不影响设置页卡片 */
+  root.style.setProperty('--card-rgb',dark?'34,36,42':'255,255,255');
   const cb=$('fontInvert');
   if(cb&&cb.checked!==fontInvert)cb.checked=fontInvert;
 }
@@ -2157,9 +2528,12 @@ function applyWallpaper(){
   }
   const sl=$('wallClarity');
   if(sl)sl.value=wallClarity;
-  /* 换壁纸后重算亮度，反色才知道该给白字还是黑字 */
+  /* 换壁纸后重算亮度，反色才知道该给白字还是黑字。
+     亮度先归零并同步反色一次：即便某些 WebView 图片 onload 不触发、取色失败，
+     深色壁纸也能立刻按兜底给白字；取色成功后再按真实亮度校正。 */
+  wallLuma=null;
+  applyFontInvert();
   if(wallpaper)computeWallLuma(wallpaper,l=>{wallLuma=l;applyFontInvert()});
-  else{wallLuma=null;applyFontInvert()}
 }
 applyWallpaper();
 /* 气泡实度：写 --bubble-a，气泡底色用 rgba 让壁纸透上来（0 = 全透，100 = 实底） */
@@ -2353,6 +2727,8 @@ function fillChatSettingsForm(){
   if($('callNoAutoHangup'))$('callNoAutoHangup').checked=chatSettings.callNoAutoHangup;
   $('recallPct').value=chatSettings.recallPct;
   $('quotePct').value=chatSettings.quotePct;
+  if($('notifyMsgOn'))$('notifyMsgOn').checked=chatSettings.notifyMsgOn;
+  if($('notifyCallOn'))$('notifyCallOn').checked=chatSettings.notifyCallOn;
   updateChatSummaries();
 }
 /* 分类标题旁的数值摘要 */
@@ -2378,8 +2754,12 @@ document.querySelectorAll('#setPanelChat .fold-head').forEach(h=>{
   h.addEventListener('click',()=>{
     const card=h.parentElement,willOpen=!card.classList.contains('open');
     document.querySelectorAll('#setPanelChat .fold-card').forEach(c=>c.classList.remove('open'));
-    if(willOpen)card.classList.add('open');
+    if(willOpen){setFoldDuration(card);card.classList.add('open')}
   });
+});
+/* 使用大全页：声音提醒 / 数据整理两张折叠卡片，点标题展开收起（默认收起） */
+document.querySelectorAll('#setPanelUsage .fold-card>.fold-head').forEach(h=>{
+  h.addEventListener('click',()=>{setFoldDuration(h.parentElement);h.parentElement.classList.toggle('open')});
 });
 /* 输入法键盘弹出时：把当前编辑的输入框滚动到工具栏下方可见处，布局本身不变形 */
 document.querySelectorAll('#setPanelChat input[type=text]').forEach(inp=>{
@@ -2412,8 +2792,8 @@ function clampChatField(id,v){
     resetAutoContactTimer();
   });
 });
-['readIgnoreOn','autoContactOn','pinCardOn','callNoAutoHangup'].forEach(id=>{const el=$(id);if(el)el.addEventListener('change',()=>{
-  if(id==='readIgnoreOn')chatSettings.readIgnoreOn=el.checked; else if(id==='autoContactOn')chatSettings.autoContactOn=el.checked; else if(id==='pinCardOn')chatSettings.pinCardOn=el.checked; else if(id==='callNoAutoHangup')chatSettings.callNoAutoHangup=el.checked;
+['readIgnoreOn','autoContactOn','pinCardOn','callNoAutoHangup','notifyMsgOn','notifyCallOn'].forEach(id=>{const el=$(id);if(el)el.addEventListener('change',()=>{
+  if(id==='readIgnoreOn')chatSettings.readIgnoreOn=el.checked; else if(id==='autoContactOn')chatSettings.autoContactOn=el.checked; else if(id==='pinCardOn')chatSettings.pinCardOn=el.checked; else if(id==='callNoAutoHangup')chatSettings.callNoAutoHangup=el.checked; else if(id==='notifyMsgOn')chatSettings.notifyMsgOn=el.checked; else if(id==='notifyCallOn')chatSettings.notifyCallOn=el.checked;
   updateChatSummaries();saveChatSettings();
 })});
 
@@ -2435,66 +2815,7 @@ $('recordSearchInput').oninput=()=>{
     box.appendChild(d);
   });
 };
-/* 导出：真实聊天对话记录（JSON / TXT 两种格式） */
-$('recordExportJson').onclick=()=>{
-  const data=history.map(m=>({from:m.side==='me'?'我':profile.nickname,text:msgPlainText(m)}));
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='chat_record_'+Date.now()+'.json';a.click();
-};
-$('recordExportTxt').onclick=()=>{
-  const lines=history.map(m=>`[${m.side==='me'?'我':profile.nickname}] ${msgPlainText(m)}`).join('\n');
-  const blob=new Blob([lines],{type:'text/plain'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='chat_record_'+Date.now()+'.txt';a.click();
-};
-/* 导入：JSON 与 TXT 各自独立按键、独立格式 */
-$('recordImportJsonBtn').onclick=()=>$('recordImportJsonFile').click();
-$('recordImportJsonFile').onchange=e=>{
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    try{
-      const data=JSON.parse(ev.target.result);
-      if(Array.isArray(data)){
-        /* 新格式：真实对话记录 [{from,text}] */
-        history=data.map(x=>({side:(x.from==='我'||x.side==='me')?'me':'other',text:String(x.text||''),type:x.type||''}));
-      }else if(data.history){
-        /* 兼容旧版全量备份 */
-        history=data.history;
-        if(data.profile) profile=Object.assign(profile,data.profile);
-        if(data.myProfile) myProfile=Object.assign(myProfile,data.myProfile);
-        if(data.coupleSets) coupleSets=data.coupleSets;
-        if(data.dreamSettings) dreamSettings=Object.assign(dreamSettings,data.dreamSettings);
-        if(data.chatSettings) chatSettings=Object.assign(chatSettings,data.chatSettings);
-        if(data.momentsData) momentsData=data.momentsData;
-        if(data.mailsData) mailsData=data.mailsData;
-        saveProfile();saveCouples();saveDreamSettings();saveChatSettings();saveMoments();saveMails();renderNav();
-      }else throw new Error('格式不符');
-      history=history.filter(m=>m&&msgPlainText(m).trim());
-      saveHistory();chatBody.innerHTML='';restoreHistory();renderHomePreview();
-      alert('JSON 导入成功');
-    }catch(err){alert('JSON 解析失败，请选择本页导出的 JSON 对话记录')}
-  };
-  r.readAsText(f);
-  e.target.value='';
-};
-$('recordImportTxtBtn').onclick=()=>$('recordImportTxtFile').click();
-$('recordImportTxtFile').onchange=e=>{
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const text=ev.target.result;
-    const lines=text.split('\n').filter(Boolean);
-    history=lines.map(l=>{
-      const m=l.match(/^\[(.+?)\]\s*(.*)$/);
-      if(m)return{side:m[1]==='我'?'me':'other',text:m[2],type:''};
-      return{side:'other',text:l,type:''};
-    });
-    saveHistory();chatBody.innerHTML='';restoreHistory();renderHomePreview();
-    alert('已作为 TXT 导入');
-  };
-  r.readAsText(f);
-  e.target.value='';
-};
+/* 聊天记录的导入 / 导出统一收进「主页设置 · 数据整理」，记录页只保留统计、搜索与清空删除 */
 $('recordClearChat').onclick=()=>{
   if(!confirm('确定清空全部聊天记录吗？'))return;
   history=[];saveHistory();chatBody.innerHTML='';renderHomePreview();renderRecordPage();
@@ -2504,9 +2825,116 @@ $('recordDeleteAll').onclick=()=>{
   history=[];momentsData=[];mailsData=[];coupleSets=[];
   profile={nickname:'梦角',avatar:''};myProfile={nickname:'我',avatar:''};
   dreamSettings={probBase:50,probPct:10,lastChangeDate:'',chatCountSinceChange:0};
-  try{localStorage.setItem('taDeleted','1')}catch(e){}
+  try{localStorage.setItem('taDeleted','1');localStorage.removeItem('momentPlan');localStorage.removeItem('mailPlan')}catch(e){}
+  ['chat','moments','mail'].forEach(a=>setAppDot(a,false));
+  if(mpTimer){clearTimeout(mpTimer);mpTimer=null}
   saveHistory();saveMoments();saveMails();saveCouples();saveProfile();saveDreamSettings();
   chatBody.innerHTML='';renderHomePreview();showHome();alert('已删除TA，所有数据已清除');
+};
+
+/* ================= 数据整理：整包导出 / 导入（聊天记录 + 字卡库 + 朋友圈 + 邮箱） =================
+   JSON / TXT 两种格式：TXT 文件内容与 JSON 相同（纯文本备份），导入时两种都能读。 */
+function expSelection(){
+  const sel={chat:false,cards:false,moments:false,mail:false,settings:false};
+  document.querySelectorAll('#expSelCats input[type=checkbox][value]').forEach(c=>{if(c.value in sel)sel[c.value]=c.checked});
+  return sel;
+}
+function expHasAny(sel){return sel.chat||sel.cards||sel.moments||sel.mail||sel.settings}
+function collectBackup(sel){
+  const data={type:'yimian_backup',version:3,exportedAt:nowStamp()};
+  if(sel.chat)data.history=history;
+  if(sel.cards)data.cards=cards;
+  if(sel.moments)data.momentsData=momentsData;
+  if(sel.mail)data.mailsData=mailsData;
+  /* 设置项：壁纸、头像、昵称、功能设置（聊天频率等），导出时默认勾选 */
+  if(sel.settings)data.settings={
+    chatSettings:chatSettings,
+    dreamSettings:dreamSettings,
+    profile:profile,
+    myProfile:myProfile,
+    coupleSets:coupleSets,
+    wallpaper:(function(){try{return localStorage.getItem('wallpaper')||''}catch(e){return ''}})(),
+    wallClarity:String(wallClarity),
+    bubbleTrans:localStorage.getItem('bubbleSolidity')||String(bubbleTrans),
+    fontInvert:fontInvert?'1':'0',
+    patAutoPronoun:patAutoPronoun?'1':'0',
+    momentCover:(function(){try{return localStorage.getItem('momentCover')||''}catch(e){return ''}})(),
+    momentCoverMeta:localStorage.getItem('momentCoverMeta')||''
+  };
+  return data;
+}
+function expDownload(ext){
+  const sel=expSelection();
+  if(!expHasAny(sel)){alert('请至少选择一类要导出的数据');return}
+  const blob=new Blob([JSON.stringify(collectBackup(sel),null,2)],{type:ext==='json'?'application/json':'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='yimian_backup_'+Date.now()+'.'+ext;a.click();
+  showSaveToast('备份已导出');
+}
+/* 点导出按钮时才弹出类别选择（单选或全选），确认后按所选格式下载 */
+let expPendingFormat='json';
+$('expExportJson').onclick=()=>{expPendingFormat='json';$('expSelModal').classList.add('show')};
+$('expExportTxt').onclick=()=>{expPendingFormat='txt';$('expSelModal').classList.add('show')};
+$('expSelCancel').onclick=()=>$('expSelModal').classList.remove('show');
+$('expSelModal').onclick=e=>{if(e.target===$('expSelModal'))$('expSelModal').classList.remove('show')};
+$('expSelOk').onclick=()=>{$('expSelModal').classList.remove('show');expDownload(expPendingFormat)};
+/* 全选联动：勾/取消全选同步四类；四类全勾上时全选自动勾 */
+(function(){
+  const all=$('expSelAll');if(!all)return;
+  const items=[...document.querySelectorAll('#expSelCats input[type=checkbox][value]')];
+  all.onchange=()=>items.forEach(c=>c.checked=all.checked);
+  items.forEach(c=>c.addEventListener('change',()=>{all.checked=items.every(x=>x.checked)}));
+})();
+$('expImportBtn').onclick=()=>$('expImportFile').click();
+$('expImportFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      const isBackup=data&&data.type==='yimian_backup';
+      const isLegacy=data&&Array.isArray(data.history)&&!isBackup;
+      if(!isBackup&&!isLegacy)throw new Error('格式不符');
+      if(Array.isArray(data.history)){history=data.history.filter(m=>m&&msgPlainText(m).trim());saveHistory();chatBody.innerHTML='';restoreHistory()}
+      if(data.cards&&typeof data.cards==='object'){cards=Object.assign(cards,data.cards);
+        cards.zika=(cards.zika||[]).map(i=>typeof i==='string'?{content:i,group:DEFAULT_GROUP}:i);
+        if(!Array.isArray(cards.zikaGroups))cards.zikaGroups=[DEFAULT_GROUP];
+        cards.zika.forEach(i=>{if(!cards.zikaGroups.includes(i.group))cards.zikaGroups.push(i.group)});
+        if(!Array.isArray(cards.disabledGroups))cards.disabledGroups=[];
+        ['pat','emoji','kaomoji'].forEach(k=>{if(!Array.isArray(cards[k]))cards[k]=[]});
+        saveCards();renderLib()}
+      if(Array.isArray(data.momentsData)){momentsData=data.momentsData;saveMoments();renderMoments()}
+      if(Array.isArray(data.mailsData)){mailsData=data.mailsData;saveMails();renderMails()}
+      /* 设置项：壁纸、头像、昵称、功能设置（聊天频率等），导入后立即恢复生效 */
+      if(data.settings&&typeof data.settings==='object'){
+        const st=data.settings;
+        if(st.chatSettings&&typeof st.chatSettings==='object'){chatSettings=Object.assign(chatSettings,st.chatSettings);saveChatSettings();fillChatSettingsForm()}
+        if(st.dreamSettings&&typeof st.dreamSettings==='object'){dreamSettings=Object.assign(dreamSettings,st.dreamSettings);saveDreamSettings()}
+        if(st.profile&&typeof st.profile==='object')profile=Object.assign(profile,st.profile);
+        if(st.myProfile&&typeof st.myProfile==='object')myProfile=Object.assign(myProfile,st.myProfile);
+        if(Array.isArray(st.coupleSets)){coupleSets=st.coupleSets;saveCouples();renderCoupleList()}
+        if(st.profile||st.myProfile){saveProfile();renderNav();refreshAvatars();refreshPatTexts();renderHomePreview()}
+        const kvMap={wallpaper:'wallpaper',wallClarity:'wallClarity',bubbleTrans:'bubbleSolidity',fontInvert:'fontInvert',patAutoPronoun:'patAutoPronoun',momentCover:'momentCover',momentCoverMeta:'momentCoverMeta'};
+        Object.keys(kvMap).forEach(k=>{
+          if(typeof st[k]==='string'&&st[k]!==''){try{localStorage.setItem(kvMap[k],st[k])}catch(e){}}
+        });
+        /* 外观类即时生效：壁纸/通透度/气泡实度/反色/朋友圈封面 */
+        try{wallpaper=localStorage.getItem('wallpaper')||''}catch(e){}
+        try{const n=Number(localStorage.getItem('wallClarity'));if(!isNaN(n))wallClarity=Math.max(0,Math.min(100,n))}catch(e){}
+        try{const n=Number(localStorage.getItem('bubbleSolidity'));if(!isNaN(n)&&localStorage.getItem('bubbleSolidity')!=='')bubbleTrans=Math.max(0,Math.min(100,n))}catch(e){}
+        try{fontInvert=localStorage.getItem('fontInvert')==='1'}catch(e){}
+        try{const p=localStorage.getItem('patAutoPronoun');if(p!==null)patAutoPronoun=(p==='1')}catch(e){}
+        try{coverData=localStorage.getItem('momentCover')||''}catch(e){}
+        applyWallpaper();applyBubbleTrans();applyFontInvert();
+        if(patAutoPronounToggle)patAutoPronounToggle.checked=patAutoPronoun;
+        renderMoments();
+      }
+      renderHomePreview();
+      alert('导入成功：'+(isBackup?'备份':'旧版')+'数据已恢复'+(ev.target.result.length>1e6?'（数据量较大，建议刷新一次页面）':''));
+    }catch(err){alert('导入失败：请选择本应用「数据整理」导出的备份文件（JSON 或 TXT）')}
+  };
+  r.readAsText(f);
+  e.target.value='';
 };
 
 /* ================= 字卡库 ================= */
@@ -2694,8 +3122,9 @@ function renderLib(light){
     el.onclick=()=>{
       if(batchMode){if(selected.has(item))selected.delete(item);else selected.add(item);el.classList.toggle('selected');updateBatchBar()}
       else{
-        if(isE&&String(text).startsWith('data:image')){const w=window.open('');w.document.write(`<img src="${text}" style="max-width:100%">`)}
-        else openEditModal(item);
+        /* 表情包图片只作展示：点击不放大、不弹窗，无任何反应（避免满屏图无法退出） */
+        if(isE&&String(text).startsWith('data:image'))return;
+        openEditModal(item);
       }
     };
     frag.appendChild(el);
@@ -2941,7 +3370,201 @@ function momentItemOf(m){
   const idx=momentsData.indexOf(m);
   return idx>-1?momentFeed.querySelector('.moment-item[data-idx="'+idx+'"]'):null;
 }
-function seedMomentsIfEmpty(){let del=false;try{del=localStorage.getItem('taDeleted')==='1'}catch(e){}if(momentsData.length||del)return;const t=composeOtherText(true);if(t)momentsData.push({author:'other',text:t,time:nowStamp(),replies:[]});saveMoments()}
+/* ===== 朋友圈页内新消息通知（参考微信）：梦角有回复/新动态时，主页图标亮红点，
+   进朋友圈顶部出现「N 条新消息」胶囊；每点一次查看一条（从远到近），胶囊持续显示剩余条数，
+   全部看完红点才消失 ===== */
+function momentsUnread(){
+  let u=null;
+  try{u=JSON.parse(localStorage.getItem('momentsLatest')||'null')}catch(e){}
+  if(!u)return null;
+  if(!Array.isArray(u.list)){                            /* 兼容旧的单条格式：转成队列 */
+    if(u.count>0&&u.mid)u={list:[{mid:u.mid,kind:u.kind||'reply'}]};
+    else u=null;
+  }
+  if(u&&(!u.list||!u.list.length))u=null;
+  return u;
+}
+function notifyMoments(kind,m){
+  if(m)midOf(m);                          /* 保证可跳转：动态必须有 id */
+  const u=momentsUnread()||{list:[]};
+  u.list.push({mid:m?m.mid:null,kind:kind,t:Date.now()});   /* 追加到队尾，查看时从队头（最远）开始 */
+  try{localStorage.setItem('momentsLatest',JSON.stringify(u))}catch(e){}
+  setAppDot('moments',true);
+  updateMomentsNotify();
+}
+function updateMomentsNotify(){
+  const pill=$('momentsNotify');if(!pill)return;
+  const u=momentsUnread();
+  const n=u?u.list.length:0;
+  pill.hidden=n===0;
+  if(n>0){
+    const first=u.list[0];                /* 胶囊文案指向下一次点击会看的那条（最远的一条） */
+    $('momentsNotifyText').textContent=n>1?(n+' 条新消息'):(first.kind==='post'?'TA 发布了新动态':'有新的回复');
+  }
+}
+function clearMomentsUnread(){
+  try{localStorage.removeItem('momentsLatest')}catch(e){}
+  setAppDot('moments',false);
+  updateMomentsNotify();
+}
+/* 点胶囊：每次查看一条，从最远（最早）到最近逐条看；是回复就滚到该动态最新一条 TA 回复；
+   没看完胶囊继续显示剩余条数，全部看完红点才消失 */
+(function(){
+  const pill=$('momentsNotify');if(!pill)return;
+  pill.addEventListener('click',()=>{
+    const u=momentsUnread();
+    if(!u||!u.list.length){clearMomentsUnread();return}
+    const cur=u.list.shift();              /* 取出最远的一条 */
+    if(u.list.length){
+      try{localStorage.setItem('momentsLatest',JSON.stringify(u))}catch(e){}
+      setAppDot('moments',true);
+      updateMomentsNotify();               /* 还有剩余：胶囊继续显示 N 条新消息 */
+    }else clearMomentsUnread();            /* 看完最后一条：清红点、藏胶囊 */
+    if(!cur||!cur.mid)return;
+    let m=momentsData.find(x=>x&&x.mid===cur.mid);
+    if(!m){renderMoments();m=momentsData.find(x=>x&&x.mid===cur.mid)}
+    if(!m)return;
+    const item=momentItemOf(m);
+    if(item){
+      flashMoment(item,moments.querySelector('.moments-scroll'));
+      if(cur.kind==='reply'){
+        const rps=item.querySelectorAll('.mi-reply-item[data-author="other"]');
+        if(rps.length){const last=rps[rps.length-1];try{last.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){try{last.scrollIntoView()}catch(e2){}}}
+      }
+    }
+  });
+})();
+function seedMomentsIfEmpty(){let del=false;try{del=localStorage.getItem('taDeleted')==='1'}catch(e){}if(momentsData.length||del)return;const t=composeOtherText(true);if(t){const m={author:'other',text:t,time:nowStamp(),replies:[]};momentsData.push(m);saveMoments();if(!momentsVisible())notifyMoments('post',m)}}
+
+/* ===== 朋友圈默认节奏（写死为默认行为，不额外提供设置项） =====
+   ① 梦角自己发动态：频率介于「每 2 天 1 条」~「每天 2 条」，即间隔 12~48 小时随机；
+   ② 我发动态后梦角必回：不秒回，随机延迟，最晚 12 小时内一定回；
+   ③ 动态下的留言：梦角不必每条都回，但连续 3 条都没回就补一条，保证不会全程不回。
+   延迟按真实时间算，任务写进 localStorage，关掉页面再打开仍会按到期时间兑现。 */
+/* 正式值：梦角自动发圈间隔 12~48 小时随机；我发圈后 TA 最晚 12 小时内必回（偏短分布，多数较快） */
+const MOMENT_AUTO_MIN=12*3600*1000,MOMENT_AUTO_MAX=48*3600*1000;
+const MOMENT_REPLY_MIN=30*1000,MOMENT_REPLY_MAX=12*3600*1000;
+let mpTimer=null;
+function randMomentGap(){return MOMENT_AUTO_MIN+Math.random()*(MOMENT_AUTO_MAX-MOMENT_AUTO_MIN)}
+function randReplyDelay(){return MOMENT_REPLY_MIN+(MOMENT_REPLY_MAX-MOMENT_REPLY_MIN)*Math.pow(Math.random(),2.5)}
+function loadMomentPlan(){
+  let p=null;try{p=JSON.parse(localStorage.getItem('momentPlan')||'null')}catch(e){}
+  if(!p||typeof p!=='object')p={};
+  if(typeof p.nextAutoAt!=='number'||!isFinite(p.nextAutoAt))p.nextAutoAt=Date.now()+randMomentGap();
+  if(!Array.isArray(p.pending))p.pending=[];
+  if(typeof p.miss!=='number')p.miss=0;
+  return p;
+}
+function saveMomentPlan(p){try{localStorage.setItem('momentPlan',JSON.stringify(p))}catch(e){}}
+function taDeleted(){try{return localStorage.getItem('taDeleted')==='1'}catch(e){return false}}
+function pushOtherMoment(){
+  if(taDeleted())return;                 /* 删除 TA 后不再自动补发动态 */
+  const t=composeOtherText(true);if(!t)return;
+  momentsData.push({author:'other',text:t,time:nowStamp(),replies:[]});saveMoments();
+  if(momentsVisible())renderMoments();
+  notifyMoments('post',momentsData[momentsData.length-1]);   /* 新动态一律亮红点+页内通知 */
+}
+function deliverMomentReply(mid){
+  if(taDeleted())return;                 /* 删除 TA 后不再补发回复 */
+  const m=momentsData.find(x=>x&&x.mid===mid);if(!m)return;
+  const r=composeOtherText(true);if(!r)return;
+  if(!Array.isArray(m.replies))m.replies=[];
+  m.replies.push({author:'other',text:r,time:nowStamp(),replyTo:'me'});saveMoments();
+  if(momentsVisible())refreshMomentReplies(m);
+  notifyMoments('reply',m);              /* 回复一律亮红点+页内通知 */
+}
+function runMomentPlan(){
+  if(mpTimer){clearTimeout(mpTimer);mpTimer=null}
+  if(taDeleted())return;                 /* 删除 TA 后调度器整体停摆 */
+  const p=loadMomentPlan(),now=Date.now();
+  let changed=false;
+  /* 旧任务的时间戳可能还是按旧节奏常量排的（比如把常量临时调小验证时，
+     存量任务还停在几小时后）。超出当前常量范围的，按当前节奏重排，验证立刻见效 */
+  if(p.nextAutoAt>now+MOMENT_AUTO_MAX*1.05){p.nextAutoAt=now+randMomentGap();changed=true}
+  p.pending.forEach(t=>{if(t&&t.dueAt>now+MOMENT_REPLY_MAX*1.05){t.dueAt=now+randReplyDelay();changed=true}});
+  /* 久未打开最多补 2 条，避免一次刷屏；补完从现在重新排下一次 */
+  let guard=0;
+  while(now>=p.nextAutoAt&&guard<2){pushOtherMoment();p.nextAutoAt=now+randMomentGap();guard++;changed=true}
+  const remain=[];
+  p.pending.forEach(task=>{
+    if(task&&typeof task.mid==='string'&&task.dueAt<=now){deliverMomentReply(task.mid);changed=true}
+    else if(task&&typeof task.mid==='string')remain.push(task);
+    else changed=true;
+  });
+  if(remain.length!==p.pending.length)changed=true;
+  p.pending=remain;
+  if(changed)saveMomentPlan(p);
+  const dueList=p.pending.map(t=>t.dueAt);dueList.push(p.nextAutoAt);
+  const next=Math.min.apply(null,dueList);
+  const delay=Math.max(1000,Math.min(next-now,2147483000));
+  mpTimer=setTimeout(runMomentPlan,delay);
+}
+
+/* ===== 聊天离线补发：没打开页面时 TA 也"照常"发消息，打开后看到离开期间的消息 =====
+   前提：聊天页设置 · 聊天里的「主动联系」开启；删除 TA 后不补发。
+   档位（不满进上一档）：1 天内最多 5 条；1~3 天每天 3 条；3~5 天每天 1 条；
+   5~15 天每 2 天 1 条；15~30 天每 5 天 1 条；超过一个月偶尔冒泡（3~5 条）。
+   时间戳铺在离开期间的真实时间里（默认只在 8:00~23:30，偶尔 1~2 条深夜消息），
+   打开主页时聊天图标亮红点。 */
+let lastSeenTimer=null;
+function touchLastSeen(){try{localStorage.setItem('ynLastSeen',String(Date.now()))}catch(e){}}
+function offlineMsgCount(days){
+  if(days<1)return 2+Math.floor(Math.random()*4);      /* 2~5 条 */
+  if(days<3)return Math.max(3,Math.round(days*3));     /* 每天 3 条 */
+  if(days<5)return Math.max(3,Math.round(days));       /* 每天 1 条 */
+  if(days<15)return Math.max(2,Math.floor(days/2));    /* 每 2 天 1 条 */
+  if(days<=30)return Math.max(3,Math.floor(days/5));   /* 每 5 天 1 条 */
+  return 3+Math.floor(Math.random()*3);                /* 好久没联系，冒个泡 */
+}
+function offlineScheduleTimes(startMs,endMs,n){
+  const span=endMs-startMs,times=[],seg=span/(n+1);
+  for(let i=0;i<n;i++){
+    /* 把窗口均分成 n+1 段、每段内随机取点：顺序不乱、分布自然 */
+    let t=startMs+seg*(i+1)+(Math.random()-0.5)*seg*0.9;
+    const d=new Date(t);
+    const h=d.getHours()+d.getMinutes()/60;
+    if(h<8||h>=23.5){                                   /* 落到深夜就挪进白天 8:00~22:59 */
+      d.setHours(8+Math.floor(Math.random()*15),Math.floor(Math.random()*60),0,0);
+      t=d.getTime();
+    }
+    times.push(t);
+  }
+  /* 真实感：约四成概率把其中 1 条挪成深夜消息（23:10~23:59 或 0:00~01:20） */
+  if(n>=2&&Math.random()<0.4){
+    const i=Math.floor(Math.random()*n),d=new Date(times[i]);
+    if(Math.random()<0.5)d.setHours(23,10+Math.floor(Math.random()*50),0,0);
+    else{if(Math.random()<0.5)d.setDate(d.getDate()+1);d.setHours(0,Math.floor(Math.random()*80),0,0)}
+    const nt=d.getTime();
+    if(nt>startMs&&nt<endMs)times[i]=nt;
+  }
+  return times.sort((a,b)=>a-b);
+}
+function catchUpOfflineChat(){
+  /* 先读上次在线时间，再刷新本次时间——顺序反了会永远算出"离开 0 分钟" */
+  let prev=0;try{prev=Number(localStorage.getItem('ynLastSeen'))||0}catch(e){}
+  touchLastSeen();
+  if(taDeleted()||!chatSettings.autoContactOn)return;
+  /* 首次使用（没有记录）或离开不足 30 分钟不算"离开"，避免每次刷新都补发 */
+  if(!prev)return;
+  const absence=Date.now()-prev;
+  if(absence<30*60*1000)return;
+  const days=absence/86400000;
+  let n=offlineMsgCount(days);
+  if(absence<2*3600*1000)n=Math.min(n,3);               /* 离开不到 2 小时最多 3 条，更像真人 */
+  const times=offlineScheduleTimes(prev,Date.now(),n);
+  let added=0;
+  times.forEach(t=>{
+    const text=composeOtherText(true);if(!text)return;
+    const d=new Date(t);
+    const rec={side:'other',text,type:'',time:pad2(d.getHours())+':'+pad2(d.getMinutes()),
+               day:(d.getMonth()+1)+'月'+d.getDate()+'日',flag:'auto'};
+    history.push(rec);added++;
+  });
+  if(!added)return;
+  saveHistory();
+  if(chatVisible()){chatBody.innerHTML='';restoreHistory()}
+  else setAppDot('chat',true);
+}
 function renderMoments(){
   mcInner.style.backgroundImage=coverData?`url(${coverData})`:'';
   mcInner.style.transform=coverData?`translate(${coverMeta.x}%,${coverMeta.y}%)`:'';
@@ -2964,6 +3587,7 @@ function renderMoments(){
 /* ===== 朋友圈评论 / 回复：底部弹出输入条 ===== */
 const replyComposer=$('replyComposer'),replyInput=$('replyInput'),replySend=$('replySend');
 let replyTarget=null;   /* {idx, replyTo} 当前在评论哪条动态 / 回复谁 */
+let replyWaitIv=0;      /* 输入条等待键盘的轮询定时器 */
 function isEditingField(){
   const a=document.activeElement;
   return !!a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.isContentEditable);
@@ -3011,6 +3635,21 @@ function openMomentReply(item,replyTo,targetEl){
   const taName=profile.nickname||'梦角';
   replyInput.placeholder=replyTo?('回复 '+taName+'…'):'评论…';
   replyComposer.classList.add('show');
+  /* 弹跳修复：键盘还没升起时先藏住输入条，等键盘高度到位再一次性滑入，
+     避免「先贴在屏幕底、再跳到键盘上沿」的二次弹动 */
+  if(replyWaitIv){clearInterval(replyWaitIv);replyWaitIv=0}
+  if(!document.body.classList.contains('kbd-open')){
+    replyComposer.classList.add('wait-kbd');
+    const t0=Date.now();
+    replyWaitIv=setInterval(()=>{
+      if(!replyComposer.classList.contains('show')||(replyWaitIv&&Date.now()-t0>600)){clearInterval(replyWaitIv);replyWaitIv=0}
+      if(!replyComposer.classList.contains('wait-kbd'))return;
+      if(document.body.classList.contains('kbd-open')||Date.now()-t0>600){
+        replyComposer.classList.remove('wait-kbd');
+        clearInterval(replyWaitIv);replyWaitIv=0;
+      }
+    },50);
+  }
   /* 必须在点击手势里同步聚焦，键盘才会真的弹出来（延后 focus 会被系统忽略） */
   try{replyInput.focus({preventScroll:true})}catch(e){try{replyInput.focus()}catch(e2){}}
   const n=replyInput.value.length;
@@ -3025,6 +3664,8 @@ function openMomentReply(item,replyTo,targetEl){
 }
 function closeMomentReply(keepText){
   replyComposer.classList.remove('show');
+  replyComposer.classList.remove('wait-kbd');
+  if(replyWaitIv){clearInterval(replyWaitIv);replyWaitIv=0}
   momentFeed.querySelectorAll('.mi-reply-item.replying').forEach(x=>x.classList.remove('replying'));
   replyTarget=null;
   if(!keepText)replyInput.value='';
@@ -3046,10 +3687,14 @@ function sendMomentReply(){
   closeMomentReply(true);
   refreshMomentReplies(m,true);       /* true = 发完把你刚回复的那条滚进视野并闪一下 */
   showSaveToast(wasReply?'回复已发送':'评论已发送');
-  if(Math.random()<0.6)setTimeout(()=>{
+  /* 留言回复：梦角无需每条都回，但连续 3 条都没回就必回一条，保证不会全程零回复（模拟真实） */
+  const p=loadMomentPlan();
+  const willReply=Math.random()<0.6||p.miss>=2;
+  p.miss=willReply?0:p.miss+1;saveMomentPlan(p);
+  if(willReply)setTimeout(()=>{
     const r=composeOtherText(true);
-    if(r){m.replies.push({author:'other',text:r,time:nowStamp(),replyTo:'me'});saveMoments();refreshMomentReplies(m);if(!momentsVisible())setMomentsDot(true)}
-  },900);
+    if(r){m.replies.push({author:'other',text:r,time:nowStamp(),replyTo:'me'});saveMoments();refreshMomentReplies(m);notifyMoments('reply',m)}
+  },600+Math.random()*2400);
 }
 replySend.onclick=sendMomentReply;
 replyInput.onkeydown=e=>{
@@ -3131,21 +3776,19 @@ function renderMomentReplies(box,m){
   });
 }
 momentPublishBtn.onclick=()=>{momentText.value='';momentModal.classList.add('show')};
-/* 朋友圈「设置」：功能还在设计中，先给个入口和提示 */
-const momentSettingBtn=$('momentSettingBtn');
-if(momentSettingBtn)momentSettingBtn.onclick=()=>showSaveToast('朋友圈设置还在设计中～');
 momentCancel.onclick=()=>momentModal.classList.remove('show');
 momentSave.onclick=()=>{
   const t=momentText.value.trim();if(!t){momentModal.classList.remove('show');return}
   const fresh={author:'me',text:t,time:nowStamp(),replies:[]};
+  midOf(fresh);
   momentsData.push(fresh);saveMoments();momentModal.classList.remove('show');renderMoments();
-  /* 联系人回复的是「你刚发的这一条」，直接挂进它的评论区，不再另发一条动态 */
-  if(Math.random()<.6)setTimeout(()=>{
-    const r=composeOtherText(true);if(!r)return;
-    if(!Array.isArray(fresh.replies))fresh.replies=[];
-    fresh.replies.push({author:'other',text:r,time:nowStamp(),replyTo:'me'});saveMoments();
-    if(momentsVisible())refreshMomentReplies(fresh,true);else setMomentsDot(true);
-  },800);
+  /* 默认行为：我发动态后梦角「必回」，但不秒回，随机延迟、最晚 12 小时内；
+     按真实到期时间持久化，关掉页面再打开也会兑现 */
+  const p=loadMomentPlan();
+  p.pending.push({mid:fresh.mid,dueAt:Date.now()+randReplyDelay()});
+  if(p.pending.length>40)p.pending=p.pending.slice(-40);
+  saveMomentPlan(p);
+  runMomentPlan();
 };
 /* ===== 朋友圈封面：整张原图完整保留，拖动选位置 → 确认 ===== */
 const coverCropModal=$('coverCropModal'),coverCropFrame=$('coverCropFrame'),coverCropImg=$('coverCropImg'),coverCropThumb=$('coverCropThumb');
@@ -3189,7 +3832,7 @@ coverFile.onchange=e=>{
       /* 让预览框的宽高比和真实封面一致，选出来的位置才和最终效果对得上 */
       const realW=(document.getElementById('moments')||{}).clientWidth||360;
       const fw=coverCropFrame.clientWidth||360;
-      coverCropFrame.style.height=Math.round(fw*210/realW)+'px';
+      coverCropFrame.style.height=Math.round(fw*170/realW)+'px';
       paintCrop();
     };
     im.onload=()=>start(im.naturalWidth,im.naturalHeight);
@@ -3230,16 +3873,103 @@ $('coverCropSave').onclick=()=>{
 };
 
 /* ================= 邮箱 ================= */
-function seedMailsIfEmpty(){let del=false;try{del=localStorage.getItem('taDeleted')==='1'}catch(e){}if(mailsData.length||del)return;const b=composeOtherText(false);if(b)mailsData.push({from:'other',title:'给你的一封信',text:b,time:nowStamp(),unread:true});saveMails()}
+function mailMidOf(m){if(!m.mid)m.mid='ml'+Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36);return m.mid}
+/* 信件归类：mine=我写的；letter=TA 主动写的信；reply=TA 针对我的信写的回信（旧数据按标题推断） */
+function mailKind(m){
+  if(m.from==='me')return'mine';
+  if(m.kind==='letter'||m.kind==='reply')return m.kind;
+  const t=m.title||'';
+  return(t.indexOf('Re:')===0||t.indexOf('回信')===0)?'reply':'letter';
+}
+function mailUnreadCount(){return mailsData.filter(m=>m.from==='other'&&m.unread).length}
+let mailFilter=null;   /* null=全部；letter=TA的来信；mine=我的写信；reply=TA的回信 */
+function updateMailStats(){
+  const s=$('mailStatsLine');
+  if(s){
+    let txt;
+    if(!mailFilter){
+      /* 全部：共 X 封，Y 封未看（Y 可点直达） */
+      const n=mailUnreadCount();
+      txt='共 '+mailsData.length+' 封，<span class="mail-unseen'+(n>0?'':' zero')+'"'+(n>0?' id="mailUnseenLink"':'')+'>'+n+' 封未看</span>';
+    }else if(mailFilter==='mine'){
+      /* 我的写信：只统计我自己写的，状态固定「已寄出」 */
+      const cnt=mailsData.filter(m=>mailKind(m)==='mine').length;
+      txt='共 '+cnt+' 封 • 已寄出';
+    }else{
+      /* TA的来信 / TA的回信：只统计该类，按有没有未拆的显示状态（有未拆可点直达） */
+      const cnt=mailsData.filter(m=>mailKind(m)===mailFilter).length;
+      const un=mailsData.filter(m=>mailKind(m)===mailFilter&&m.unread).length;
+      txt='共 '+cnt+' 封 • <span class="mail-unseen'+(un>0?'':' zero')+'"'+(un>0?' id="mailUnseenLink"':'')+'>'+(un>0?'有未拆':'无未拆')+'</span>';
+    }
+    s.innerHTML=txt;
+    const link=$('mailUnseenLink');
+    if(link)link.onclick=jumpMailUnread;
+  }
+  const nL=mailsData.filter(m=>mailKind(m)==='letter').length,
+        nM=mailsData.filter(m=>mailKind(m)==='mine').length,
+        nR=mailsData.filter(m=>mailKind(m)==='reply').length;
+  if($('mailCountLetter'))$('mailCountLetter').textContent=nL;
+  if($('mailCountMine'))$('mailCountMine').textContent=nM;
+  if($('mailCountReply'))$('mailCountReply').textContent=nR;
+}
+/* 未读跳转：清筛选刷新列表，滚到最早那封未读信并闪红框（参考朋友圈新消息胶囊的跳转） */
+function jumpMailUnread(){
+  mailFilter=null;
+  const un=mailsData.filter(m=>m.from==='other'&&m.unread);
+  renderMails();
+  if(!un.length)return;
+  const el=mailList.querySelector('[data-mid="'+un[0].mid+'"]');
+  if(el){
+    try{el.scrollIntoView({block:'center',behavior:'smooth'})}catch(e){try{el.scrollIntoView()}catch(e2){}}
+    el.classList.add('just-flash');
+    setTimeout(()=>el.classList.remove('just-flash'),1200);
+  }
+}
+function seedMailsIfEmpty(){let del=false;try{del=localStorage.getItem('taDeleted')==='1'}catch(e){}if(mailsData.length||del)return;const b=composeLetterBody(20,true);if(b.text){mailsData.push({from:'other',kind:'letter',mid:mailMidOf({}),title:'给你的一封信',text:b.text,sticker:b.sticker,time:nowStamp(),unread:true});saveMails();if(!mailVisible())setAppDot('mail',true)}}
 function renderMails(){
-  mailList.innerHTML='';const list=mailsData.slice().reverse();
-  if(!list.length){const e=document.createElement('div');e.className='plain-body';e.textContent='暂无邮件';mailList.appendChild(e);return}
+  mailList.innerHTML='';
+  updateMailStats();
+  [['mailCatLetter','letter'],['mailCatMine','mine'],['mailCatReply','reply']].forEach(p=>{const b=$(p[0]);if(b)b.classList.toggle('active',mailFilter===p[1])});
+  let list=mailsData.slice().reverse();
+  if(mailFilter)list=list.filter(m=>mailKind(m)===mailFilter);
+  if(!list.length){const e=document.createElement('div');e.className='plain-body';e.textContent=mailFilter?'这一类还没有信件':'暂无邮件';mailList.appendChild(e);return}
+  /* 按月份分组：同月放进同一个气泡卡片，头部分界线左侧月份、右侧当月封数（时间戳形如 11月19日 08:30） */
+  const groups=[];
   list.forEach(m=>{
-    const item=document.createElement('div');item.className='mail-item';
-    const ap=authorProfile(m.from),fb=authorName(m.from).charAt(0)||'我';
-    item.innerHTML=`<div class="mail-avatar">${avatarHTML(ap.avatar,fb)}</div><div class="mail-main"><div class="mail-top"><div class="mail-from">${authorName(m.from)}</div><div class="mail-time">${m.time||''}</div></div><div class="mail-title">${m.title||'（无标题）'}</div><div class="mail-preview">${m.text||''}</div></div>${m.unread?'<div class="mail-unread"></div>':''}`;
-    item.onclick=()=>openMailDetail(m);mailList.appendChild(item);
+    const mm=(m.time||'').match(/^(\d{1,2})月/);
+    const key=mm?mm[1]:'?';
+    let g=groups.find(x=>x.key===key);
+    if(!g){g={key:key,label:mm?mm[1]+' 月':'未知月份',items:[]};groups.push(g)}
+    g.items.push(m);
   });
+  groups.forEach(g=>{
+    const line=document.createElement('div');line.className='mail-month-line';
+    line.innerHTML='<span class="mm-label">'+g.label+'</span><i class="mm-rule"></i><span class="mm-count">'+g.items.length+' 封</span>';
+    mailList.appendChild(line);
+    const card=document.createElement('div');card.className='mail-month';
+    const box=document.createElement('div');box.className='mail-month-body';
+    g.items.forEach(m=>box.appendChild(mailItemEl(m)));
+    card.appendChild(box);
+    mailList.appendChild(card);
+  });
+}
+/* 单封信件条：左侧写信时间（月/日 + 周几），右侧内容前 2 行，底部小字「N个字 • 已读/未读」 */
+function mailItemEl(m){
+  const item=document.createElement('div');item.className='mail-item';
+  const t=m.time||'',mm=t.match(/^(\d{1,2})月(\d{1,2})日/);
+  const y=new Date().getFullYear();
+  const dObj=mm?new Date(y,Number(mm[1])-1,Number(mm[2])):null;
+  const week=dObj?['周日','周一','周二','周三','周四','周五','周六'][dObj.getDay()]:'';
+  const dayTxt=mm?mm[1]+'/'+mm[2]:'';
+  const words=(m.text||'').replace(/\s+/g,'').length;
+  /* 我的写信只标注字数（自己寄出的信没有已读未读之分）；来信/回信才标注已读/未读 */
+  const meta=mailKind(m)==='mine'?words+'个字':words+'个字 • '+(m.unread?'<span class="st-unread">未读</span>':'<span class="st-read">已读</span>');
+  item.innerHTML='<div class="mail-date"><div class="md-day">'+dayTxt+'</div><div class="md-week">'+week+'</div></div>'
+    +'<div class="mail-main"><div class="mail-snippet"></div><div class="mail-meta">'+meta+'</div></div>';
+  item.querySelector('.mail-snippet').textContent=m.text||'（空信）';
+  if(m.mid)item.dataset.mid=m.mid;   /* 供「X 封未看」跳转定位 */
+  item.onclick=()=>openMailDetail(m);
+  return item;
 }
 let currentMail=null;
 function openMailDetail(m){
@@ -3247,33 +3977,192 @@ function openMailDetail(m){
   m.unread=false;saveMails();renderMails();
   mailDetailTitle.textContent=m.title||'（无标题）';
   mailDetailFrom.textContent='发件人：'+authorName(m.from);
-  mailDetailText.textContent=m.text||'';mailDetailTime.textContent=m.time||'';
+  /* 表情包单独显示在信纸上方便读的位置（最上方），下面才是信的文字内容；
+     图片型表情包按图片插入（不混进纯文本正文，不会乱码），文字型按大字显示 */
+  const stk=mailStickerOf(m);
+  let body=m.text||'';
+  if(stk&&!m.sticker){                    /* 旧信：表情包是正文首行，剥出来 */
+    const nl=body.indexOf('\n');
+    body=nl<0?'':body.slice(nl+1).replace(/^\n+/,'');
+  }
+  if(stk){
+    mailDetailSticker.hidden=false;
+    if(/^data:image/.test(stk)){
+      mailDetailSticker.textContent='';
+      const img=document.createElement('img');img.src=stk;img.alt='表情包';
+      mailDetailSticker.appendChild(img);
+    }else mailDetailSticker.textContent=stk;
+  }else{mailDetailSticker.hidden=true;mailDetailSticker.textContent=''}
+  mailDetailText.textContent=body;
+  mailDetailTime.textContent=m.time||'';
   mailDetailModal.classList.remove('show');envelopeModal.classList.remove('show');void envelopeModal.offsetWidth;envelopeModal.classList.add('show');
   setTimeout(()=>{envelopeModal.classList.remove('show');mailDetailModal.classList.add('show')},1300);
 }
-function fillPickBar(bar,target){
-  bar.innerHTML='';const pool=cards.zika.map(i=>i.content).filter(Boolean);
-  if(!pool.length){bar.innerHTML='<span class="pick-empty">字卡库暂无内容</span>';return}
-  pool.forEach(t=>{const c=document.createElement('button');c.className='pick-chip';c.textContent=t;c.onclick=()=>{target.value=target.value?target.value+' '+t:t};bar.appendChild(c)});
+/* 写信新页面：点写信/回信进入整页信纸；顶部返回键 + 居中「写给 昵称 / 年.月.日」+ 右侧实时字数；
+   白纸左列是 日/周几/月份，右侧写信（首行浅色提示「写下给对方的信...」输入后消失）；
+   纸张底部栏：夹图（手机相册选图）/ 夹表情包（字卡库表情包任选）气泡按钮，选中结果显示在信纸上方的附件条；
+   只有「寄出」一个按键（方圆气泡样式）。
+   回复某封信时内部记下上下文，TA 的回信才会归到「TA的回信」 */
+const wpPage=$('mailWritePage'),wpBack=$('wpBack'),wpTo=$('wpTo'),wpDate=$('wpDate'),wpCount=$('wpCount'),
+      wpDay=$('wpDay'),wpWeek=$('wpWeek'),wpMonth=$('wpMonth'),wpText=$('wpText'),
+      wpImgBtn=$('wpImgBtn'),wpStickerBtn=$('wpStickerBtn'),wpAttachStrip=$('wpAttachStrip'),wpSend=$('wpSend');
+let replyContext=null,wpImgAtt='',wpStkAtt='';
+function openWritePage(reply){
+  replyContext=reply||null;wpImgAtt='';wpStkAtt='';
+  const d=new Date();
+  wpTo.textContent=profile.nickname;
+  wpDate.textContent=d.getFullYear()+'.'+(d.getMonth()+1)+'.'+d.getDate();
+  wpDay.textContent=d.getDate();
+  wpWeek.textContent=['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  wpMonth.textContent=(d.getMonth()+1)+'月';
+  wpText.value='';wpCount.textContent='0 字';
+  renderWpAttach();
+  wpPage.classList.add('show');
+  setTimeout(()=>{try{wpText.focus()}catch(e){}},80);
 }
-mailWriteBtn.onclick=()=>{mailTitle.value='';mailText.value='';mailTo.value=profile.nickname;fillPickBar(mailPickBar,mailText);mailModal.classList.add('show')};
-mailCancel.onclick=()=>mailModal.classList.remove('show');
-mailSave.onclick=()=>{
-  const t=mailText.value.trim();if(!t){mailModal.classList.remove('show');return}
-  const title=mailTitle.value.trim()||'未命名信件';
-  mailsData.push({from:'me',title,text:t,time:nowStamp(),unread:false});saveMails();mailModal.classList.remove('show');renderMails();
-  if(Math.random()<.6)setTimeout(()=>{const r=composeOtherText(false);if(r){mailsData.push({from:'other',title:'回信',text:r,time:nowStamp(),unread:true});saveMails();if(mail.classList.contains('show'))renderMails()}},1000);
+function closeWritePage(){wpPage.classList.remove('show');replyContext=null}
+mailWriteBtn.onclick=()=>openWritePage(null);
+wpBack.onclick=closeWritePage;
+wpText.addEventListener('input',()=>{wpCount.textContent=wpText.value.replace(/\s+/g,'').length+' 字'});
+/* 附件条：夹图（信纸顶部预览，不占信纸本身） */
+function renderWpAttach(){
+  wpAttachStrip.innerHTML='';
+  const has=wpImgAtt||wpStkAtt;
+  wpAttachStrip.hidden=!has;
+  if(!has)return;
+  const mkX=cell=>{
+    const x=document.createElement('button');x.className='wp-att-x';x.textContent='×';x.type='button';
+    x.onclick=()=>cell();wpAttachStrip.lastChild.appendChild(x);
+  };
+  if(wpImgAtt){
+    const d=document.createElement('div');d.className='wp-att';
+    const im=document.createElement('img');im.src=wpImgAtt;im.alt='夹图';d.appendChild(im);
+    wpAttachStrip.appendChild(d);
+    mkX(()=>{wpImgAtt='';renderWpAttach()});
+  }
+  if(wpStkAtt){
+    const d=document.createElement('div');d.className='wp-att';
+    const t=document.createElement('span');t.className='wp-att-txt';t.textContent=wpStkAtt;d.appendChild(t);
+    wpAttachStrip.appendChild(d);
+    mkX(()=>{wpStkAtt='';renderWpAttach()});
+  }
+}
+/* 夹图：打开手机相册选一张（参考字卡库添加表情包的流程），选完确认直接放到信纸顶部 */
+wpImgBtn.onclick=()=>{
+  const input=document.createElement('input');
+  input.type='file';input.accept='image/*';
+  input.onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();r.onload=ev=>{wpImgAtt=ev.target.result;renderWpAttach()};r.readAsDataURL(f);
+  };
+  input.click();
+};
+/* 夹表情包：从字卡库的表情包里选一个 */
+wpStickerBtn.onclick=()=>openStickerPick(s=>{wpStkAtt=s;renderWpAttach()});
+wpSend.onclick=()=>{
+  const t=wpText.value.trim();
+  if(!t){closeWritePage();return}
+  const title=replyContext?('Re: '+(replyContext.title||'来信')):'我的来信';
+  /* 附件随信寄出（都夹时图片优先）；表情包单独存 sticker 字段，不混进正文 */
+  const sticker=wpImgAtt||wpStkAtt;
+  const mine={from:'me',title,text:t,sticker,time:nowStamp(),unread:false};mailMidOf(mine);
+  mailsData.push(mine);saveMails();wpImgAtt='';wpStkAtt='';closeWritePage();renderMails();
+  scheduleMailReply(mine);   /* TA 是否回信、什么时候回：交给信件节奏调度 */
 };
 mailDetailClose.onclick=()=>mailDetailModal.classList.remove('show');
 mailReplyBtn.onclick=()=>{
   mailDetailModal.classList.remove('show');
   if(!currentMail)return;
-  mailTitle.value='Re: '+(currentMail.title||'来信');
-  mailText.value='';
-  mailTo.value=authorName(currentMail.from);
-  fillPickBar(mailPickBar,mailText);
-  mailModal.classList.add('show');
+  openWritePage(currentMail);
 };
+/* 信箱分类入口：点一下筛选该类，再点一次恢复全部 */
+[['mailCatLetter','letter'],['mailCatMine','mine'],['mailCatReply','reply']].forEach(p=>{const b=$(p[0]);if(b)b.onclick=()=>{mailFilter=(mailFilter===p[1])?null:p[1];renderMails()}});
+
+/* ===== 信件正文生成：从字卡库取字卡 + 颜文字 + 表情包（一封信最多 1 个表情包） =====
+   表情包（含图片型）单独存进 sticker 字段、不混进纯文本正文，所以图片型也不会变乱码：
+   信纸展开时表情包（图片按图片、文字按大字）显示在最上方，下方才是信的文字内容 */
+function pickMailSticker(){
+  const pool=(cards.emoji||[]).filter(v=>v&&String(v).trim());
+  return pool.length?String(pool[Math.floor(Math.random()*pool.length)]):'';
+}
+function composeLetterBody(maxCards,stickerOk){
+  const pool=cards.zika.filter(i=>i.content&&String(i.content).trim()&&!groupDisabled(i.group)).map(i=>i.content);
+  if(!pool.length)return{text:'',sticker:''};
+  const n=Math.min(maxCards,2+Math.floor(Math.random()*(maxCards-1)));   /* 2~maxCards 个，不超过上限 */
+  const parts=[],cp=pool.slice();
+  for(let i=0;i<n&&cp.length;i++)parts.push(cp.splice(Math.floor(Math.random()*cp.length),1)[0]);
+  const kao=(cards.kaomoji||[]).filter(v=>v&&String(v).trim());
+  if(kao.length&&Math.random()<.5)parts.push(String(kao[Math.floor(Math.random()*kao.length)]));
+  return{text:parts.join('\n'),sticker:(stickerOk&&Math.random()<.4)?pickMailSticker():''};
+}
+/* 取一封信的表情包：新信读 sticker 字段；旧信兜底从正文首行识别（文字型表情包或 data:image 图片） */
+function mailStickerOf(m){
+  if(!m)return'';
+  if(m.sticker)return String(m.sticker);
+  const raw=m.text||'',nl=raw.indexOf('\n'),first=nl<0?'':raw.slice(0,nl);
+  if(!first)return'';
+  if(/^data:image/.test(first))return first;
+  return (cards.emoji||[]).some(v=>v&&String(v)===first)?first:'';
+}
+/* ===== 信件节奏（正式值，写死为默认行为） =====
+   ① TA 主动来信：间隔 24~72 小时随机一封（约 1~3 天一封，不太少也不频繁），正文最多 20 个字卡；
+   ② TA 回信：我每发一封信，65% 概率回，连续 3 封没回就必回一封（不会全程不回，也不会每封都回）；
+      回信延迟 30 分钟~6 小时随机（偏短分布），正文最多 10 个字卡。任务持久化 localStorage，跨会话兑现。 */
+const MAIL_FROM_MIN=24*3600*1000,MAIL_FROM_MAX=72*3600*1000;
+const MAIL_REPLY_MIN=30*60*1000,MAIL_REPLY_MAX=6*3600*1000;
+const MAIL_REPLY_PCT=65,MAIL_REPLY_STREAK=3;
+let mailTimer=null;
+function loadMailPlan(){try{return JSON.parse(localStorage.getItem('mailPlan')||'null')||{}}catch(e){return{}}}
+function saveMailPlan(p){try{localStorage.setItem('mailPlan',JSON.stringify(p))}catch(e){}}
+function randMailFromGap(){return MAIL_FROM_MIN+Math.random()*(MAIL_FROM_MAX-MAIL_FROM_MIN)}
+function randMailReplyDelay(){return MAIL_REPLY_MIN+(MAIL_REPLY_MAX-MAIL_REPLY_MIN)*Math.pow(Math.random(),1.5)}
+function pushOtherMail(kind,refTitle){
+  if(taDeleted())return false;
+  const b=composeLetterBody(kind==='reply'?10:20,true);
+  if(!b.text)return false;
+  const m={from:'other',kind:kind,mid:mailMidOf({}),title:kind==='reply'?('Re: '+(refTitle||'来信')):'给你的一封信',text:b.text,sticker:b.sticker,time:nowStamp(),unread:true};
+  mailsData.push(m);saveMails();
+  if(mailVisible())renderMails();else setAppDot('mail',true);
+  return true;
+}
+/* 我发信后：按概率排一个回信任务；连续 3 封没回就强制排一封 */
+function scheduleMailReply(myMail){
+  const p=loadMailPlan();
+  p.replies=p.replies||[];
+  p.noReplyStreak=(p.noReplyStreak||0)+1;
+  if(!p.forceNext&&Math.random()*100>=MAIL_REPLY_PCT){   /* 这封不回，攒连击 */
+    if(p.noReplyStreak>=MAIL_REPLY_STREAK)p.forceNext=true;
+    saveMailPlan(p);return;
+  }
+  p.noReplyStreak=0;p.forceNext=false;
+  p.replies.push({mid:myMail.mid,dueAt:Date.now()+randMailReplyDelay()});
+  saveMailPlan(p);runMailPlan();
+}
+function runMailPlan(){
+  if(mailTimer){clearTimeout(mailTimer);mailTimer=null}
+  if(taDeleted())return;
+  const p=loadMailPlan(),now=Date.now();
+  let changed=false;
+  /* 存量任务超出当前常量范围（比如刚改过节奏）→ 按当前节奏重排 */
+  if(p.nextLetterAt&&p.nextLetterAt>now+MAIL_FROM_MAX*1.05){p.nextLetterAt=now+randMailFromGap();changed=true}
+  (p.replies||[]).forEach(r=>{if(r.dueAt>now+MAIL_REPLY_MAX*1.05){r.dueAt=now+randMailReplyDelay();changed=true}});
+  /* 到期兑现：TA 主动来信 */
+  if(p.nextLetterAt&&p.nextLetterAt<=now){pushOtherMail('letter','');p.nextLetterAt=now+randMailFromGap();changed=true}
+  /* 到期兑现：TA 的回信 */
+  if(Array.isArray(p.replies)&&p.replies.length){
+    const due=p.replies.filter(r=>r.dueAt<=now);
+    if(due.length){
+      due.forEach(r=>{const L=mailsData.find(x=>x&&x.mid===r.mid);if(L)pushOtherMail('reply',L.title)});
+      p.replies=p.replies.filter(r=>r.dueAt>now);changed=true;
+    }
+  }
+  if(!p.nextLetterAt){p.nextLetterAt=now+randMailFromGap();changed=true}
+  if(changed)saveMailPlan(p);
+  const next=[];
+  if(p.nextLetterAt&&p.nextLetterAt>now)next.push(p.nextLetterAt-now);
+  (p.replies||[]).forEach(r=>{if(r.dueAt>now)next.push(r.dueAt-now)});
+  if(next.length)mailTimer=setTimeout(runMailPlan,Math.max(1000,Math.min.apply(null,next)));
+}
 
 /* ================= 快捷头像昵称弹窗（兼容保留） ================= */
 profileCancel.onclick=()=>profileModal.classList.remove('show');
@@ -3289,10 +4178,29 @@ profileSave.onclick=()=>{
 };
 
 /* ================= 初始化 ================= */
-renderNav();restoreHistory();renderHomePreview();seedMomentsIfEmpty();seedMailsIfEmpty();loadMomentsDot();
-resetAutoContactTimer();
-setTimeout(()=>splash.classList.add('fade-out'),1800);
-setTimeout(()=>{if(!allScreens.some(e=>e.classList.contains('show')))showHome()},2600);
+renderNav();restoreHistory();renderHomePreview();seedMomentsIfEmpty();seedMailsIfEmpty();loadAppDots();
+catchUpOfflineChat();                    /* 离开期间 TA 发的消息，打开时按真实时间补进来 */
+setInterval(touchLastSeen,30000);        /* 开着页面时持续记录"最后在线时间"，供下次离线补发计算 */
+window.addEventListener('beforeunload',touchLastSeen);
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden')touchLastSeen();
+  else{runMomentPlan();runMailPlan()}    /* 切回页面立即结算到期任务：后台标签页定时器会被浏览器节流/暂停 */
+});
+resetAutoContactTimer();runMomentPlan();runMailPlan();
+/* 开屏关闭：多重保险，避免夸克/华为内核上定时器或 CSS 过渡失效导致黑屏残留、盖住主页点击 */
+let splashClosed=false;
+function closeSplash(){
+  if(splashClosed||!splash)return;
+  splashClosed=true;
+  splash.classList.add('fade-out');
+  /* 主动从 DOM 移除，过渡失效时也绝不会拦截点击 */
+  setTimeout(()=>{try{if(splash.parentNode)splash.parentNode.removeChild(splash)}catch(e){splash.style.display='none'}},900);
+}
+/* 点/触摸开屏任意处可立即跳过 */
+if(splash){splash.addEventListener('click',closeSplash);splash.addEventListener('touchend',closeSplash,{passive:true})}
+setTimeout(closeSplash,1800);
+/* 兜底：2.6s 无论如何强制主页可见，不依赖开屏是否成功移除 */
+setTimeout(()=>{closeSplash();if(!allScreens.some(e=>e.classList.contains('show')))showHome()},2600);
 </script>
 </body>
 </html>
